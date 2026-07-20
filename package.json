@@ -1,0 +1,31 @@
+{
+  "name": "poker-mavens-bot-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Poker Mavens Bot Management Platform",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:backend": "turbo run dev --filter=@poker-bot/backend",
+    "dev:worker": "turbo run dev --filter=@poker-bot/bot-worker",
+    "dev:web": "turbo run dev --filter=@poker-bot/admin-web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,json,vue,md}\"",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "test:e2e": "cd mock-poker-ui && npx playwright test",
+    "prisma:generate": "cd apps/backend && npx prisma generate",
+    "prisma:migrate": "cd apps/backend && npx prisma migrate dev",
+    "prisma:seed": "cd apps/backend && npx prisma db seed",
+    "prisma:push": "cd apps/backend && npx prisma db push"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.0",
+    "turbo": "^2.10.5",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

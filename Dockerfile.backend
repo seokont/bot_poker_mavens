@@ -1,0 +1,35 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm@8.15.0
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/backend/package.json apps/backend/
+COPY apps/backend/prisma/ apps/backend/prisma/
+COPY packages/ packages/
+
+RUN pnpm install --frozen-lockfile
+
+COPY apps/backend/ apps/backend/
+COPY packages/ packages/
+
+RUN pnpm --filter @poker-bot/backend build
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+RUN npm install -g pnpm@8.15.0
+
+COPY --from=builder /app/apps/backend/dist ./dist
+COPY --from=builder /app/apps/backend/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+CMD ["node", "dist/main.js"]

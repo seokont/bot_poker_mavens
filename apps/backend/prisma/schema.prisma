@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("VIEWER")
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  auditLogs AuditLog[]
+
+  @@map("admin_users")
+}
+
+model Bot {
+  id                String   @id @default(cuid())
+  name              String
+  login             String   @unique
+  encryptedPassword String
+  status            String   @default("OFFLINE")
+  isEnabled         Boolean  @default(true)
+  operationMode     String   @default("OBSERVER")
+  strategyProfileId String?
+  defaultBuyIn      Float    @default(1000)
+  minBuyIn          Float    @default(200)
+  maxBuyIn          Float    @default(5000)
+  dailyLossLimit    Float    @default(-5000)
+  sessionLossLimit  Float    @default(-2000)
+  maxTables         Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  strategyProfile StrategyProfile? @relation(fields: [strategyProfileId], references: [id])
+  sessions        BotSession[]
+  tableSessions   BotTableSession[]
+  hands           BotHand[]
+  decisions       BotDecision[]
+  limit           BotLimit?
+  actions         HandAction[]
+
+  @@map("bots")
+}
+
+model BotSession {
+  id               String   @id @default(cuid())
+  botId            String
+  workerId         String?
+  browserSessionId String?
+  startedAt        DateTime @default(now())
+  endedAt          DateTime?
+  startBalance     Float?
+  endBalance       Float?
+  profitLoss       Float?
+  handsPlayed      Int      @default(0)
+  status           String   @default("ACTIVE")
+  lastHeartbeatAt  DateTime?
+  errorMessage     String?
+
+  bot Bot @relation(fields: [botId], references: [id])
+
+  @@map("bot_sessions")
+}
+
+model PokerTable {
+  id              String   @id @default(cuid())
+  externalTableId String   @unique
+  name            String
+  gameType        String   @default("NLH")
+  limitType       String   @default("NL")
+  smallBlind      Float    @default(1)
+  bigBlind        Float    @default(2)
+  ante            Float    @default(0)
+  minBuyIn        Float    @default(200)
+  maxBuyIn        Float    @default(5000)
+  maxPlayers      Int      @default(9)
+  isAllowedForBots Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tableSessions BotTableSession[]
+  hands         PokerHand[]
+
+  @@map("poker_tables")
+}
+
+model BotTableSession {
+  id           String   @id @default(cuid())
+  botId        String
+  tableId      String
+  botSessionId String?
+  seatNumber   Int?
+  buyIn        Float?
+  startStack   Float?
+  currentStack Float?
+  profitLoss   Float?
+  joinedAt     DateTime @default(now())
+  leftAt       DateTime?
+  status       String   @default("ACTIVE")
+
+  bot   Bot        @relation(fields: [botId], references: [id])
+  table PokerTable @relation(fields: [tableId], references: [id])
+
+  @@map("bot_table_sessions")
+}
+
+model StrategyProfile {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  description      String?
+  difficulty       String   @default("EASY")
+  configurationJson Json?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  bots Bot[]
+
+  @@map("strategy_profiles")
+}
+
+model PokerHand {
+  id            String   @id @default(cuid())
+  externalHandId String?
+  tableId       String
+  startedAt     DateTime @default(now())
+  finishedAt    DateTime?
+  gameType      String   @default("NLH")
+  smallBlind    Float
+  bigBlind      Float
+  ante          Float    @default(0)
+  buttonSeat    Int?
+  boardJson     String?
+  pot           Float    @default(0)
+  rake          Float    @default(0)
+  rawStateJson  String?
+  createdAt     DateTime @default(now())
+
+  table    PokerTable   @relation(fields: [tableId], references: [id])
+  botHands BotHand[]
+  actions  HandAction[]
+  decisions BotDecision[]
+
+  @@unique([tableId, externalHandId])
+  @@map("poker_hands")
+}
+
+model BotHand {
+  id                String   @id @default(cuid())
+  botId             String
+  handId            String
+  position          String?
+  holeCardsEncrypted String?
+  startStack        Float?
+  endStack          Float?
+  profitLoss        Float?
+  result            String?
+  showdown          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  bot  Bot       @relation(fields: [botId], references: [id])
+  hand PokerHand @relation(fields: [handId], references: [id])
+
+  @@unique([botId, handId])
+  @@map("bot_hands")
+}
+
+model HandAction {
+  id               String   @id @default(cuid())
+  handId           String
+  botId            String?
+  externalPlayerId String?
+  street           String
+  sequence         Int
+  action           String
+  amount           Float    @default(0)
+  potBefore        Float?
+  potAfter         Float?
+  stackBefore      Float?
+  stackAfter       Float?
+  isBotAction      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  hand PokerHand @relation(fields: [handId], references: [id])
+  bot  Bot?      @relation(fields: [botId], references: [id])
+
+  @@map("hand_actions")
+}
+
+model BotDecision {
+  id               String   @id @default(cuid())
+  botId            String
+  handId           String
+  turnId           String
+  street           String?
+  stateJson        String?
+  allowedActionsJson String?
+  decision         String
+  amount           Float?
+  confidence       Float    @default(1)
+  reason           String?
+  strategyVersion  String?
+  processingTimeMs Int?
+  executed         Boolean  @default(false)
+  executionError   String?
+  createdAt        DateTime @default(now())
+
+  bot  Bot       @relation(fields: [botId], references: [id])
+  hand PokerHand @relation(fields: [handId], references: [id])
+
+  @@map("bot_decisions")
+}
+
+model BotLimit {
+  id                      String   @id @default(cuid())
+  botId                   String   @unique
+  maxDailyLoss            Float    @default(-5000)
+  maxSessionLoss          Float    @default(-2000)
+  maxHandsPerSession      Int      @default(500)
+  maxSessionDurationMinutes Int    @default(480)
+  maxBuyIn                Float    @default(5000)
+  minBalance              Float    @default(100)
+  autoStopEnabled         Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  bot Bot @relation(fields: [botId], references: [id])
+
+  @@map("bot_limits")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  beforeJson  String?
+  afterJson   String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  adminUser AdminUser? @relation(fields: [adminUserId], references: [id])
+
+  @@map("audit_logs")
+}

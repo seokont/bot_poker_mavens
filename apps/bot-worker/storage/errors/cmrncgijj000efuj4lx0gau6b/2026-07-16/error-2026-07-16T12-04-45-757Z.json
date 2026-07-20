@@ -1,0 +1,10 @@
+{
+  "botId": "cmrncgijj000efuj4lx0gau6b",
+  "timestamp": "2026-07-16T12:04:45.757Z",
+  "message": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/table/Table-1\nCall log:\n  - navigating to \"http://localhost:8080/table/Table-1\", waiting until \"domcontentloaded\"\n",
+  "stack": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/table/Table-1\nCall log:\n  - navigating to \"http://localhost:8080/table/Table-1\", waiting until \"domcontentloaded\"\n\n    at WorkerService.joinTable (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:166:18)\n    at WorkerService.handleJob (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:474:22)\n    at WorkerService.processJobs (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:436:22)",
+  "screenshotPath": "storage\\errors\\cmrncgijj000efuj4lx0gau6b\\2026-07-16\\screenshot-2026-07-16T12-04-45-757Z.png",
+  "url": "chrome-error://chromewebdata/",
+  "htmlSnapshotPath": "storage\\errors\\cmrncgijj000efuj4lx0gau6b\\2026-07-16\\snapshot-2026-07-16T12-04-45-757Z.html",
+  "consoleErrors": []
+}

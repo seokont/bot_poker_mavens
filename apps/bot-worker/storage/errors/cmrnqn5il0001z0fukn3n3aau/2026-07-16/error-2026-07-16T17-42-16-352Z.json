@@ -1,0 +1,9 @@
+{
+  "botId": "cmrnqn5il0001z0fukn3n3aau",
+  "timestamp": "2026-07-16T17:42:16.352Z",
+  "message": "Failed to get direct link: 401 {\"message\":\"Invalid or missing internal API key\",\"error\":\"Unauthorized\",\"statusCode\":401}",
+  "stack": "Error: Failed to get direct link: 401 {\"message\":\"Invalid or missing internal API key\",\"error\":\"Unauthorized\",\"statusCode\":401}\n    at WorkerService.joinTable (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:194:15)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async WorkerService.handleJob (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:699:11)\n    at async WorkerService.processJobs (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:657:11)",
+  "url": "https://iqpoker88.com/",
+  "htmlSnapshotPath": "storage\\errors\\cmrnqn5il0001z0fukn3n3aau\\2026-07-16\\snapshot-2026-07-16T17-42-16-352Z.html",
+  "consoleErrors": []
+}

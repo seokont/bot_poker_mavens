@@ -1,0 +1,1260 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]: API
+    - generic [ref=e4]: Technical Information
+  - heading "♣ Contents" [level=4] [ref=e5]
+  - list [ref=e6]:
+    - listitem [ref=e7]:
+      - link "Description" [ref=e8] [cursor=pointer]:
+        - /url: "#Description"
+    - listitem [ref=e9]:
+      - link "Example" [ref=e10] [cursor=pointer]:
+        - /url: "#Example"
+    - listitem [ref=e11]:
+      - link "JSON Support" [ref=e12] [cursor=pointer]:
+        - /url: "#JSONSupport"
+    - listitem [ref=e13]:
+      - link "PHP Example (JSON method)" [ref=e14] [cursor=pointer]:
+        - /url: "#PHPJSON"
+    - listitem [ref=e15]:
+      - link "PHP Example (legacy method)" [ref=e16] [cursor=pointer]:
+        - /url: "#PHPLegacy"
+    - listitem [ref=e17]:
+      - link "URL Encoding (legacy method)" [ref=e18] [cursor=pointer]:
+        - /url: "#URLEncoding"
+    - listitem [ref=e19]:
+      - link "Firewall" [ref=e20] [cursor=pointer]:
+        - /url: "#Firewall"
+    - listitem [ref=e21]:
+      - link "Avatars" [ref=e22] [cursor=pointer]:
+        - /url: "#Avatars"
+    - listitem [ref=e23]:
+      - link "API Command List" [ref=e24] [cursor=pointer]:
+        - /url: "#APICommands"
+  - heading "♣ Description" [level=4] [ref=e25]
+  - paragraph [ref=e26]: Poker Mavens contains an Application Programming Interface (API) for communicating with the live game server from external programs, including scripting systems like PHP and ASP.NET. Commands can also be tested by hand via any web browser but note that this system is different from the Remote Administration system, which is designed for human interaction with your server. The interface described here is for computer to computer interaction.
+  - paragraph [ref=e27]: "To use this system you must have \"Enable API\" set to \"Yes\" in the server settings and your server must be started and online. It works by making an HTTP request to the HTTP port of your server with /api appended to the end of the URL (or a custom path that you can change in the server settings). Parameters can be passed via GET (embedded in the URL) or via POST (embedded in the HTTP header). There are two parameters that must be included with each request: Password and Command. Password must be set to your API password and Command is set to one of the available commands as listed below. Other parameters may be required, depending on the particular command."
+  - paragraph [ref=e28]: "Warning: disclosing your API password (or your remote administration password) would give an attacker full access to your game server, including the modification or deletion of player accounts. Only allow your program or web script to execute on a computer that you that have control over. Otherwise the operator could use a packet sniffer program to see the password being sent in the outbound traffic."
+  - paragraph [ref=e29]: Commands sent to the API will be recorded in the event logs if "Log API events" is set to "Yes" in the system settings. The IP address of the source is also recorded. Every command supports an optional "Log" parameter that you can use to append custom text to each log entry. However, if that Log parameter is set to "No" and "API Log Exemptions" is enabled in the system settings, then no entry will be made in the event log.
+  - heading "♣ Example" [level=4] [ref=e30]
+  - paragraph [ref=e31]: "For example, if your IP is 12.34.56.789, your HTTP port is 8087, your API password is \"banana\", and you want to increment the current chip balance of a player named Aces123 by 1000 chips, then your program would make an HTTP request to:"
+  - generic [ref=e32]: "http://12.34.56.789:8087/api with parameters set via POST as: Password=banana Command=AccountsIncBalance Player=Aces123 Amount=1000 Log=Give 1000 chips to Aces123 or via GET as: http://12.34.56.789:8087/api?Password=banana&Command=AccountsIncBalance&Player=Aces123&Amount=1000&Log=Give 1000 chips to Aces123"
+  - paragraph [ref=e33]: The order and case of the parameters is not important but the first one must begin with a question mark and all remaining ones must be separated by an ampersand when using the GET method.
+  - paragraph [ref=e34]: "The server always responds with a block of text containing a \"Result\" parameter and possibly others depending on the particular command and if there were any errors. Result will either be set to Ok or Error. If there was an error then an Error parameter will be included with a description of the error. When there are multiple parameters returned, they are separated by a carriage return/line feed pair (ASCII 13 and 10). Using the example above, a typical response will look something like this:"
+  - generic [ref=e35]: Result=Ok Balance=5000
+  - paragraph [ref=e36]: "And the entry into the Event Logs (with the optional Log parameter) would look something like this:"
+  - generic [ref=e37]: 2008-07-20 17:06:29|API|AccountsIncBalance from 12.34.56.789 (Give 1000 chips to Aces123)
+  - paragraph [ref=e38]: "Or if there was an error:"
+  - generic [ref=e39]: Result=Error Error=Unknown account
+  - heading "♣ JSON Support" [level=4] [ref=e40]
+  - paragraph [ref=e41]: "Beginning with version 4.20, you can get the return data in JSON format by including JSON=Yes in your POST or GET parameters. Then the API would return something like this:"
+  - generic [ref=e42]: "{\"Result\":\"Ok\",Balance:5000}"
+  - paragraph [ref=e43]: "or this:"
+  - generic [ref=e44]: "{\"Result\":\"Error\",\"Error\":\"Unknown account\"}"
+  - heading "♣ PHP Example (JSON method)" [level=4] [ref=e45]
+  - paragraph [ref=e46]: This function can be used in PHP from a web site to access the API and return a single object containing the results. This method requests the result in JSON format, which first became an option in version 4.20. For older versions, see the legacy method further below.
+  - paragraph
+  - generic [ref=e47]: "$url = \"http://127.0.0.1:8087/api\"; // put your API path here $pw = \"xxxxxxxxxx\"; // put your API password here function Poker_API($params) // pass in parameters using an associative array { global $url, $pw; $params['Password'] = $pw; $params['JSON'] = 'Yes'; $curl = curl_init($url); curl_setopt($curl, CURLOPT_POST, true); curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params)); curl_setopt($curl, CURLOPT_TIMEOUT, 30); curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); curl_setopt($curl, CURLOPT_VERBOSE, true); curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); $response = curl_exec($curl); if (curl_errno($curl)) $obj = (object) array('Result' => 'Error', 'Error' => curl_error($curl)); else if (empty($response)) $obj = (object) array('Result' => 'Error', 'Error' => 'Connection failed'); else $obj = json_decode($response); curl_close($curl); return $obj; }"
+  - paragraph [ref=e48]: "Using the data from the previous example, you would call it like this:"
+  - generic [ref=e49]: $params = array("Command" => "AccountsIncBalance", "Player" => "Aces123", "Amount" => "1000"); $api = Poker_API($params);
+  - paragraph [ref=e50]: "And then process the response like this:"
+  - generic [ref=e51]: "if ($api -> Result == \"Ok\") echo \"The chip balance is \" . $api -> Balance; else echo \"Error: \" . $api -> Error;"
+  - paragraph [ref=e52]:
+    - text: Other examples are available
+    - link "online" [ref=e53] [cursor=pointer]:
+      - /url: http://www.briggsoft.com/docs/pmavens/API_Examples.htm
+    - text: .
+  - heading "♣ PHP Example (legacy method)" [level=4] [ref=e54]
+  - paragraph [ref=e55]: "This function can be used in PHP from a web site to access the API and return a regular or an associative array containing the results:"
+  - paragraph
+  - generic [ref=e56]: "function Poker_API($url, $params, $assoc) { $curl = curl_init($url); curl_setopt($curl, CURLOPT_POST, true); curl_setopt($curl, CURLOPT_POSTFIELDS, $params); curl_setopt($curl, CURLOPT_TIMEOUT, 30); curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); curl_setopt($curl, CURLOPT_VERBOSE, true); curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); $response = trim(curl_exec($curl)); if (curl_errno($curl)) $cerror = curl_error($curl); else $cerror = \"\"; curl_close($curl); $api = Array(); if ($assoc) // associative array result { if ($cerror != \"\") { $api[\"Result\"] = \"Error\"; $api[\"Error\"] = $cerror; } else if (empty($response)) { $api[\"Result\"] = \"Error\"; $api[\"Error\"] = \"Connection failed\"; } else { $paramlist = Explode(\"\\r\\n\", $response); foreach ($paramlist as $param) { $namevalue = Explode(\"=\", $param, 2); $api[$namevalue[0]] = $namevalue[1]; } } } else // regular array result { if ($cerror != \"\") { $api[] = \"Result=Error\"; $api[] = \"Error=\" . $cerror; } else if (empty($response)) { $api[] = \"Result=Error\"; $api[] = \"Error=Connection failed\"; } else { $paramlist = Explode(\"\\r\\n\", $response); foreach ($paramlist as $param) $api[] = $param; } } return $api; }"
+  - paragraph [ref=e57]: "Using the data from the previous example, you would call it like this:"
+  - generic [ref=e58]: $url = "http://12.34.56.789:8087/api"; $params = "Password=banana&Command=AccountsIncBalance&Player=Aces123&Amount=1000"; $api = Poker_API($url,$params,true);
+  - paragraph [ref=e59]: "And then process the response like this:"
+  - generic [ref=e60]: "if ($api[Result] == \"Ok\") echo \"The chip balance is \" . $api[Balance]; else echo \"Error: \" . $api[Error];"
+  - paragraph [ref=e61]:
+    - text: Other examples are available
+    - link "online" [ref=e62] [cursor=pointer]:
+      - /url: http://www.briggsoft.com/docs/pmavens/API_Examples2.htm
+    - text: .
+  - heading "♣ URL Encoding (legacy method)" [level=4] [ref=e63]
+  - paragraph [ref=e64]: "Note: parameter encoding is handled for you automatically when using the JSON method (via the http_build_query function). The following only applies when using the legacy method or when manually calling the API with GET parameters."
+  - paragraph [ref=e65]:
+    - text: Certain characters like "?", "&", "=", "%", "#", and several others are treated as control characters in URL strings. Therefore you must encode any parameter values that contain those characters using the form %xx where xx is the ASCII code of the character in hexadecimal format, in accordance with section 2.2 of
+    - link "RFC1738" [ref=e66] [cursor=pointer]:
+      - /url: http://www.faqs.org/rfcs/rfc1738.html
+    - text: ". For example, if you wanted to retrieve the tournament results for a tournament called \"Rough&Ready\", using the raw parameter of:"
+  - generic [ref=e67]: Tournament=Rough&Ready
+  - paragraph [ref=e68]: "would fail because the \"&\" would indicate the beginning of a new parameter. The ASCII code for \"&\" is 38 decimal or 26 hexadecimal so the proper encoding would be:"
+  - generic [ref=e69]: Tournament=Rough%26Ready
+  - paragraph [ref=e70]: Most programming languages have built-in functions for encoding URL parameters. In PHP (for example), the function is urlencode(string) or rawurlencode(string).
+  - heading "♣ Firewall" [level=4] [ref=e71]
+  - paragraph [ref=e72]: Some hosting services will have a default firewall setting that blocks connections to outbound ports other than 80 and 443, the standard HTTP/HTTPS ports. So if you can make a manual API connection in your web browser to port 8087 (or whatever HTTP Port you have set) but get a "Connection failed" result when using scripted code, that firewall is likely the reason. Talk to your host provider (where the script is hosted) and see if they will open that port for outbound connections in your account.
+  - heading "♣ Avatars" [level=4] [ref=e73]
+  - paragraph [ref=e74]: "Although not technically part of the API, the server provides access to the communal avatar graphic and individual custom player avatars so that you can display them for the purposes of creating or editing player accounts. No API password is required so this can be safely used in public links on a web page. To pull the whole communal avatar graphic, simply reference a link like this (with your own IP address or domain name):"
+  - generic [ref=e75]: http://12.34.56.789:8087/Image?Name=Avatars
+  - paragraph [ref=e76]: "To isolate a single avatar in the horizontal strip, use a DIV element set to a width and height of 64 pixels (48 pixels in versions 2, 3, and 4, 32 pixels in versions 5 and 6) and then use the CSS background-position property to specify a horizontal offset. This will be a negative number and a multiple of 64 pixels such that the first avatar will have a background-position of \"0px 0px\", the second will be \"-64px 0px\", the third will be \"-128px 0px\", etc. This example will display the third one:"
+  - generic [ref=e77]: "<!DOCTYPE html> <html> <head> <style type=\"text/css\"> #avatar { width: 64px; height: 64px; background-image: url(\"http://12.34.56.789:8087/Image?Name=Avatars\"); background-repeat: no-repeat; background-position: -128px 0px; } </style> </head> <body> <div id=\"avatar\"></div> </body> </html>"
+  - paragraph [ref=e78]: "For the custom player avatars (not part of the communal set), you just need a simple link with the player's name as one of the parameters:"
+  - generic [ref=e79]: http://12.34.56.789:8087/Avatar?Player=AceMan
+  - heading "♣ API Command List" [level=4] [ref=e80]
+  - paragraph [ref=e81]: "As documented below, there are over 70 API commands available in 7 categories:"
+  - link "Account Commands" [ref=e82] [cursor=pointer]:
+    - /url: "#Account"
+  - list [ref=e83]:
+    - listitem [ref=e84]:
+      - link "AccountsAdd" [ref=e85] [cursor=pointer]:
+        - /url: "#AccountsAdd"
+    - listitem [ref=e86]:
+      - link "AccountsDecBalance" [ref=e87] [cursor=pointer]:
+        - /url: "#AccountsDecBalance"
+    - listitem [ref=e88]:
+      - link "AccountsDecBalance2" [ref=e89] [cursor=pointer]:
+        - /url: "#AccountsDecBalance2"
+    - listitem [ref=e90]:
+      - link "AccountsDelete" [ref=e91] [cursor=pointer]:
+        - /url: "#AccountsDelete"
+    - listitem [ref=e92]:
+      - link "AccountsEdit" [ref=e93] [cursor=pointer]:
+        - /url: "#AccountsEdit"
+    - listitem [ref=e94]:
+      - link "AccountsGet" [ref=e95] [cursor=pointer]:
+        - /url: "#AccountsGet"
+    - listitem [ref=e96]:
+      - link "AccountsIncBalance" [ref=e97] [cursor=pointer]:
+        - /url: "#AccountsIncBalance"
+    - listitem [ref=e98]:
+      - link "AccountsIncBalance2" [ref=e99] [cursor=pointer]:
+        - /url: "#AccountsIncBalance2"
+    - listitem [ref=e100]:
+      - link "AccountsList" [ref=e101] [cursor=pointer]:
+        - /url: "#AccountsList"
+    - listitem [ref=e102]:
+      - link "AccountsNotes" [ref=e103] [cursor=pointer]:
+        - /url: "#AccountsNotes"
+    - listitem [ref=e104]:
+      - link "AccountsPassword" [ref=e105] [cursor=pointer]:
+        - /url: "#AccountsPassword"
+    - listitem [ref=e106]:
+      - link "AccountsPermission" [ref=e107] [cursor=pointer]:
+        - /url: "#AccountsPermission"
+    - listitem [ref=e108]:
+      - link "AccountsSearch" [ref=e109] [cursor=pointer]:
+        - /url: "#AccountsSearch"
+    - listitem [ref=e110]:
+      - link "AccountsSessionKey" [ref=e111] [cursor=pointer]:
+        - /url: "#AccountsSessionKey"
+    - listitem [ref=e112]:
+      - link "AccountsTicket" [ref=e113] [cursor=pointer]:
+        - /url: "#AccountsTicket"
+    - listitem [ref=e114]:
+      - link "AccountsTransactions" [ref=e115] [cursor=pointer]:
+        - /url: "#AccountsTransactions"
+    - listitem [ref=e116]:
+      - link "AccountsVerifyKey" [ref=e117] [cursor=pointer]:
+        - /url: "#AccountsVerifyKey"
+  - link "Blacklist Commands" [ref=e118] [cursor=pointer]:
+    - /url: "#Blacklist"
+  - list [ref=e119]:
+    - listitem [ref=e120]:
+      - link "BlacklistAdd" [ref=e121] [cursor=pointer]:
+        - /url: "#BlacklistAdd"
+    - listitem [ref=e122]:
+      - link "BlacklistDelete" [ref=e123] [cursor=pointer]:
+        - /url: "#BlacklistDelete"
+    - listitem [ref=e124]:
+      - link "BlacklistEdit" [ref=e125] [cursor=pointer]:
+        - /url: "#BlacklistEdit"
+    - listitem [ref=e126]:
+      - link "BlacklistGet" [ref=e127] [cursor=pointer]:
+        - /url: "#BlacklistGet"
+    - listitem [ref=e128]:
+      - link "BlacklistList" [ref=e129] [cursor=pointer]:
+        - /url: "#BlacklistList"
+  - link "Connection Commands" [ref=e130] [cursor=pointer]:
+    - /url: "#Connection"
+  - list [ref=e131]:
+    - listitem [ref=e132]:
+      - link "ConnectionsGet" [ref=e133] [cursor=pointer]:
+        - /url: "#ConnectionsGet"
+    - listitem [ref=e134]:
+      - link "ConnectionsList" [ref=e135] [cursor=pointer]:
+        - /url: "#ConnectionsList"
+    - listitem [ref=e136]:
+      - link "ConnectionsMessage" [ref=e137] [cursor=pointer]:
+        - /url: "#ConnectionsMessage"
+    - listitem [ref=e138]:
+      - link "ConnectionsTerminate" [ref=e139] [cursor=pointer]:
+        - /url: "#ConnectionsTerminate"
+  - link "Log Commands" [ref=e140] [cursor=pointer]:
+    - /url: "#Log"
+  - list [ref=e141]:
+    - listitem [ref=e142]:
+      - link "LogsAddEvent" [ref=e143] [cursor=pointer]:
+        - /url: "#LogsAddEvent"
+    - listitem [ref=e144]:
+      - link "LogsCallback" [ref=e145] [cursor=pointer]:
+        - /url: "#LogsCallback"
+    - listitem [ref=e146]:
+      - link "LogsError" [ref=e147] [cursor=pointer]:
+        - /url: "#LogsError"
+    - listitem [ref=e148]:
+      - link "LogsEvent" [ref=e149] [cursor=pointer]:
+        - /url: "#LogsEvent"
+    - listitem [ref=e150]:
+      - link "LogsHandHistory" [ref=e151] [cursor=pointer]:
+        - /url: "#LogsHandHistory"
+    - listitem [ref=e152]:
+      - link "LogsLobbyChat" [ref=e153] [cursor=pointer]:
+        - /url: "#LogsLobbyChat"
+  - link "Ring Game Commands" [ref=e154] [cursor=pointer]:
+    - /url: "#RingGame"
+  - list [ref=e155]:
+    - listitem [ref=e156]:
+      - link "RingGamesAdd" [ref=e157] [cursor=pointer]:
+        - /url: "#RingGamesAdd"
+    - listitem [ref=e158]:
+      - link "RingGamesDelete" [ref=e159] [cursor=pointer]:
+        - /url: "#RingGamesDelete"
+    - listitem [ref=e160]:
+      - link "RingGamesEdit" [ref=e161] [cursor=pointer]:
+        - /url: "#RingGamesEdit"
+    - listitem [ref=e162]:
+      - link "RingGamesEject" [ref=e163] [cursor=pointer]:
+        - /url: "#RingGamesEject"
+    - listitem [ref=e164]:
+      - link "RingGamesGet" [ref=e165] [cursor=pointer]:
+        - /url: "#RingGamesGet"
+    - listitem [ref=e166]:
+      - link "RingGamesList" [ref=e167] [cursor=pointer]:
+        - /url: "#RingGamesList"
+    - listitem [ref=e168]:
+      - link "RingGamesMessage" [ref=e169] [cursor=pointer]:
+        - /url: "#RingGamesMessage"
+    - listitem [ref=e170]:
+      - link "RingGamesOffline" [ref=e171] [cursor=pointer]:
+        - /url: "#RingGamesOffline"
+    - listitem [ref=e172]:
+      - link "RingGamesOnline" [ref=e173] [cursor=pointer]:
+        - /url: "#RingGamesOnline"
+    - listitem [ref=e174]:
+      - link "RingGamesOpen" [ref=e175] [cursor=pointer]:
+        - /url: "#RingGamesOpen"
+    - listitem [ref=e176]:
+      - link "RingGamesPause" [ref=e177] [cursor=pointer]:
+        - /url: "#RingGamesPause"
+    - listitem [ref=e178]:
+      - link "RingGamesPlaying" [ref=e179] [cursor=pointer]:
+        - /url: "#RingGamesPlaying"
+    - listitem [ref=e180]:
+      - link "RingGamesResume" [ref=e181] [cursor=pointer]:
+        - /url: "#RingGamesResume"
+    - listitem [ref=e182]:
+      - link "RingGamesStart" [ref=e183] [cursor=pointer]:
+        - /url: "#RingGamesStart"
+    - listitem [ref=e184]:
+      - link "RingGamesWaiting" [ref=e185] [cursor=pointer]:
+        - /url: "#RingGamesWaiting"
+  - link "System Commands" [ref=e186] [cursor=pointer]:
+    - /url: "#System"
+  - list [ref=e187]:
+    - listitem [ref=e188]:
+      - link "SystemAccount" [ref=e189] [cursor=pointer]:
+        - /url: "#SystemAccount"
+    - listitem [ref=e190]:
+      - link "SystemAccount2" [ref=e191] [cursor=pointer]:
+        - /url: "#SystemAccount2"
+    - listitem [ref=e192]:
+      - link "SystemBalance" [ref=e193] [cursor=pointer]:
+        - /url: "#SystemBalance"
+    - listitem [ref=e194]:
+      - link "SystemBalance2" [ref=e195] [cursor=pointer]:
+        - /url: "#SystemBalance2"
+    - listitem [ref=e196]:
+      - link "SystemGet" [ref=e197] [cursor=pointer]:
+        - /url: "#SystemGet"
+    - listitem [ref=e198]:
+      - link "SystemLobbyMessage" [ref=e199] [cursor=pointer]:
+        - /url: "#SystemLobbyMessage"
+    - listitem [ref=e200]:
+      - link "SystemReboot" [ref=e201] [cursor=pointer]:
+        - /url: "#SystemReboot"
+    - listitem [ref=e202]:
+      - link "SystemSet" [ref=e203] [cursor=pointer]:
+        - /url: "#SystemSet"
+    - listitem [ref=e204]:
+      - link "SystemStats" [ref=e205] [cursor=pointer]:
+        - /url: "#SystemStats"
+  - link "Tournament Commands" [ref=e206] [cursor=pointer]:
+    - /url: "#Tournament"
+  - list [ref=e207]:
+    - listitem [ref=e208]:
+      - link "TournamentsAdd" [ref=e209] [cursor=pointer]:
+        - /url: "#TournamentsAdd"
+    - listitem [ref=e210]:
+      - link "TournamentsDelete" [ref=e211] [cursor=pointer]:
+        - /url: "#TournamentsDelete"
+    - listitem [ref=e212]:
+      - link "TournamentsEdit" [ref=e213] [cursor=pointer]:
+        - /url: "#TournamentsEdit"
+    - listitem [ref=e214]:
+      - link "TournamentsGet" [ref=e215] [cursor=pointer]:
+        - /url: "#TournamentsGet"
+    - listitem [ref=e216]:
+      - link "TournamentsList" [ref=e217] [cursor=pointer]:
+        - /url: "#TournamentsList"
+    - listitem [ref=e218]:
+      - link "TournamentsMessage" [ref=e219] [cursor=pointer]:
+        - /url: "#TournamentsMessage"
+    - listitem [ref=e220]:
+      - link "TournamentsOffline" [ref=e221] [cursor=pointer]:
+        - /url: "#TournamentsOffline"
+    - listitem [ref=e222]:
+      - link "TournamentsOnline" [ref=e223] [cursor=pointer]:
+        - /url: "#TournamentsOnline"
+    - listitem [ref=e224]:
+      - link "TournamentsOpen" [ref=e225] [cursor=pointer]:
+        - /url: "#TournamentsOpen"
+    - listitem [ref=e226]:
+      - link "TournamentsPause" [ref=e227] [cursor=pointer]:
+        - /url: "#TournamentsPause"
+    - listitem [ref=e228]:
+      - link "TournamentsPlaying" [ref=e229] [cursor=pointer]:
+        - /url: "#TournamentsPlaying"
+    - listitem [ref=e230]:
+      - link "TournamentsRegister" [ref=e231] [cursor=pointer]:
+        - /url: "#TournamentsRegister"
+    - listitem [ref=e232]:
+      - link "TournamentsRemoveNoShows" [ref=e233] [cursor=pointer]:
+        - /url: "#TournamentsRemoveNoShows"
+    - listitem [ref=e234]:
+      - link "TournamentsResults" [ref=e235] [cursor=pointer]:
+        - /url: "#TournamentsResults"
+    - listitem [ref=e236]:
+      - link "TournamentsResume" [ref=e237] [cursor=pointer]:
+        - /url: "#TournamentsResume"
+    - listitem [ref=e238]:
+      - link "TournamentsStart" [ref=e239] [cursor=pointer]:
+        - /url: "#TournamentsStart"
+    - listitem [ref=e240]:
+      - link "TournamentsStats" [ref=e241] [cursor=pointer]:
+        - /url: "#TournamentsStats"
+    - listitem [ref=e242]:
+      - link "TournamentsUnregister" [ref=e243] [cursor=pointer]:
+        - /url: "#TournamentsUnregister"
+    - listitem [ref=e244]:
+      - link "TournamentsWaiting" [ref=e245] [cursor=pointer]:
+        - /url: "#TournamentsWaiting"
+  - heading "♣ Account Commands" [level=4] [ref=e246]
+  - paragraph [ref=e247]: "AccountsAdd - adds a new player account. The player's primary and secondary balances will be set automatically to the default \"Starting balance\" specified in the system settings and returned as \"Balance\" and \"Balance2\" parameters in the response. Required parameters are Player, Location, Email, and either PW or PWHash. Other parameters not specified will be assigned a default value:"
+  - list [ref=e248]:
+    - listitem [ref=e249]: "Player - 3 to 12 character player name (allowed: a to z, A to Z, 0 to 9, underscore, and dash)"
+    - listitem [ref=e250]: Creator - Name of admin that created account
+    - listitem [ref=e251]: AdminProfile - Admin profile name (Gold feature)
+    - listitem [ref=e252]: Title - 0 to 15 characters
+    - listitem [ref=e253]: Level - 0 to 50 characters
+    - listitem [ref=e254]: RealName - optional real name, up to 25 characters
+    - listitem [ref=e255]: PW - player's password to be hashed, leave blank if PWHash specified
+    - listitem [ref=e256]: PWHash - password hash, use this only when transferring or restoring an account from backup
+    - listitem [ref=e257]: Gender - Male, Female, or Unspecified
+    - listitem [ref=e258]: Location - 0 to 50 character player location
+    - listitem [ref=e259]: Balance - primary account balance (leave blank to use default starting balance)
+    - listitem [ref=e260]: Balance2 - secondary account balance (leave blank to use default starting balance)
+    - listitem [ref=e261]: LastReset - YYYY-MM-DD HH:MM date format (primary, optional, defaults to current date and time)
+    - listitem [ref=e262]: LastReset2 - YYYY-MM-DD HH:MM date format (secondary, optional, defaults to current date and time)
+    - listitem [ref=e263]: Permissions - comma-separated list of permission tokens
+    - listitem [ref=e264]: Tickets - comma-separated list of tournament ticket tokens
+    - listitem [ref=e265]: ChipsTransfer - Yes or No (primary, default is Yes)
+    - listitem [ref=e266]: ChipsTransfer2 - Yes or No (secondary, default is Yes)
+    - listitem [ref=e267]: ChipsAccept - Yes or No (primary, default is Yes)
+    - listitem [ref=e268]: ChipsAccept2 - Yes or No (secondary, default is Yes)
+    - listitem [ref=e269]: Suspend - YYYY-MM-DD HH:MM date format (leave blank for default 0000-00-00 00:00)
+    - listitem [ref=e270]: Chat - date in the format of YYYY-MM-DD HH:MM, representing the date and time when the player's chat privileges are enabled. You may also specify Yes for 0000-00-00 00:00 or No for 9999-99-99 99:99
+    - listitem [ref=e271]: "ChatColor1 - optional seated chat color, #RRGGBB format (Pro/Gold feature)"
+    - listitem [ref=e272]: "ChatColor2 - optional observer chat color, #RRGGBB format (Pro/Gold feature)"
+    - listitem [ref=e273]: FirstLogin - YYYY-MM-DD HH:MM date format (optional, defaults to 0000-00-00 00:00)
+    - listitem [ref=e274]: LastLogin - YYYY-MM-DD HH:MM date format (optional, defaults to 0000-00-00 00:00)
+    - listitem [ref=e275]: Logins - number of times player has logged in (optional, defaults to 0)
+    - listitem [ref=e276]: Email - player's email address
+    - listitem [ref=e277]: ValCode - optional 8 digit hexadecimal number used for email validation
+    - listitem [ref=e278]: Avatar - a number from 0 to 64
+    - listitem [ref=e279]: AvatarFile - optional avatar file path (Pro/Gold feature)
+    - listitem [ref=e280]: "Custom1 - optional custom field #1"
+    - listitem [ref=e281]: "Custom2 - optional custom field #2"
+    - listitem [ref=e282]: "Custom3 - optional custom field #3"
+    - listitem [ref=e283]: "Custom4 - optional custom field #4"
+    - listitem [ref=e284]: "Custom5 - optional custom field #5"
+    - listitem [ref=e285]: Note - optional note field
+    - listitem [ref=e286]: ERake - equal primary rake contributions (optional, defaults to 0)
+    - listitem [ref=e287]: ERake2 - equal secondary rake contributions (optional, defaults to 0)
+    - listitem [ref=e288]: PRake - proportional primary rake contributions (optional, defaults to 0)
+    - listitem [ref=e289]: PRake2 - proportional secondary rake contributions (optional, defaults to 0)
+    - listitem [ref=e290]: TFees - primary tournament fee contributions (optional, defaults to 0)
+    - listitem [ref=e291]: TFees2 - secondary tournament fee contributions (optional, defaults to 0)
+  - paragraph
+  - paragraph [ref=e292]: "AccountsDecBalance - decrements the primary account balance of a player. This command does not check to see if you have \"Allow negative balance\" turned on or not in the account settings. An \"Amount\" parameter is included in the response that specifies the number of chips that were actually subtracted. A \"Balance\" parameter is returned with the player's new chip balance. This command is safe to use even while the player is logged in and playing. Required parameters are Player and Amount:"
+  - list [ref=e293]:
+    - listitem [ref=e294]: Player - account name
+    - listitem [ref=e295]: Amount - number of chips to subtract from account
+    - listitem [ref=e296]: Negative - optional parameter set to "Allow", "Zero", or "Skip". Use Allow (the default) to let the player's balance go below 0. Use Zero to reset the account to 0 if the command results in a negative balance. Use Skip to not subtract any chips if the result would be a negative balance.
+  - paragraph [ref=e297]: "AccountsDecBalance2 - decrements the secondary account balance of a player. This command does not check to see if you have \"Allow negative balance\" turned on or not in the account settings. An \"Amount\" parameter is included in the response that specifies the number of chips that were actually subtracted. A \"Balance2\" parameter is returned with the player's new chip balance. This command is safe to use even while the player is logged in and playing. Required parameters are Player and Amount:"
+  - list [ref=e298]:
+    - listitem [ref=e299]: Player - account name
+    - listitem [ref=e300]: Amount - number of chips to subtract from account
+    - listitem [ref=e301]: Negative - optional parameter set to "Allow", "Zero", or "Skip". Use Allow (the default) to let the player's balance go below 0. Use Zero to reset the account to 0 if the command results in a negative balance. Use Skip to not subtract any chips if the result would be a negative balance.
+  - paragraph [ref=e302]: AccountsDelete - deletes the specified account. Player is the only required parameter.
+  - paragraph [ref=e303]: AccountsEdit - change one or more settings in a player account. Player is the only required parameter and cannot be changed itself. Include other parameters only for the items you want to change. Parameters not included will retain their current values.
+  - list [ref=e304]:
+    - listitem [ref=e305]: Player - account name (required)
+    - listitem [ref=e306]: Creator - Name of admin that created account
+    - listitem [ref=e307]: AdminProfile - Admin profile name (Gold feature)
+    - listitem [ref=e308]: Title - 0 to 15 characters
+    - listitem [ref=e309]: Level - 0 to 50 characters
+    - listitem [ref=e310]: RealName - real name, up to 25 characters
+    - listitem [ref=e311]: PW - player's password to be hashed, leave blank if PWHash specified
+    - listitem [ref=e312]: PWHash - password hash, use this only when transferring or restoring an account from backup
+    - listitem [ref=e313]: Gender - Male, Female, Unspecified
+    - listitem [ref=e314]: Location - 0 to 50 character player location
+    - listitem [ref=e315]: Balance - primary account balance (avoid setting this parameter when player is logged in)
+    - listitem [ref=e316]: Balance2 - secondary account balance (avoid setting this parameter when player is logged in)
+    - listitem [ref=e317]: LastReset - date in the format of yyyy-mm-dd hh:mm
+    - listitem [ref=e318]: LastReset2 - date in the format of yyyy-mm-dd hh:mm
+    - listitem [ref=e319]: Permissions - comma-separated list of permission tokens
+    - listitem [ref=e320]: Tickets - comma-separated list of tournament ticket tokens
+    - listitem [ref=e321]: ChipsTransfer - Yes or No
+    - listitem [ref=e322]: ChipsTransfer2 - Yes or No
+    - listitem [ref=e323]: ChipsAccept - Yes or No
+    - listitem [ref=e324]: ChipsAccept2 - Yes or No
+    - listitem [ref=e325]: Suspend - YYYY-MM-DD HH:MM date format (leave blank for default 0000-00-00 00:00)
+    - listitem [ref=e326]: Chat - date in the format of YYYY-MM-DD HH:MM, representing the date and time when the player's chat privileges are enabled. Use 0000-00-00 00:00 to enable immediately or 9999-99-99 99:99 for an indefinite ban
+    - listitem [ref=e327]: "ChatColor1 - optional seated chat color, #RRGGBB format (Pro/Gold feature)"
+    - listitem [ref=e328]: "ChatColor2 - optional observer chat color, #RRGGBB format (Pro/Gold feature)"
+    - listitem [ref=e329]: FirstLogin - date in the format of yyyy-mm-dd hh:mm
+    - listitem [ref=e330]: LastLogin - date in the format of yyyy-mm-dd hh:mm
+    - listitem [ref=e331]: Logins - the number of times the player has logged in
+    - listitem [ref=e332]: Email - player's email address
+    - listitem [ref=e333]: ValCode - 8 digit hexadecimal number used for email validation
+    - listitem [ref=e334]: Avatar - a number from 0 to 64
+    - listitem [ref=e335]: AvatarFile - optional avatar file path (Pro/Gold feature)
+    - listitem [ref=e336]: "Custom1 - optional custom field #1"
+    - listitem [ref=e337]: "Custom2 - optional custom field #2"
+    - listitem [ref=e338]: "Custom3 - optional custom field #3"
+    - listitem [ref=e339]: "Custom4 - optional custom field #4"
+    - listitem [ref=e340]: "Custom5 - optional custom field #5"
+    - listitem [ref=e341]: Note - optional note field
+    - listitem [ref=e342]: ERake - equal primary rake contributions
+    - listitem [ref=e343]: ERake2 - equal secondary rake contributions
+    - listitem [ref=e344]: PRake - proportional primary rake contributions
+    - listitem [ref=e345]: PRake2 - proportional secondary rake contributions
+    - listitem [ref=e346]: TFees - primary tournament fee contributions
+    - listitem [ref=e347]: TFees2 - secondary tournament fee contributions
+  - paragraph [ref=e348]: "AccountsGet - retrieves settings for the account specified by the Player parameter (required). In additional, a non-blank SessionID will be returned if the player is currently logged in. If they are seated at any ring games, the total amount of chips they have in play will be returned with the RingChips parameter. If they are in the waiting list for any tournaments that have not yet started, the total buy-in and entry fee amounts will be returned with the RegChips parameter. A typical response will look something like this (JSON format):"
+  - generic [ref=e349]: "{\"Result\":\"Ok\",\"Player\":\"AceMan\",\"Creator\":\"Administrator\",\"AdminProfile\":\"\",\"Title\":\"\",\"Level\":\"\",\"RealName\":\"Joe K.\",\"PWHash\":\"DE6D9A49-38129B6ECA0328ED6E48879699AD740FC2C7C4E4977D5DC527A99D99FCDCEDDF\",\"Gender\":\"Male\",\"Location\":\"Springfield\",\"Balance\":25020,\"Balance2\":1000,\"LastReset\":\"2008-08-25 19:16\",\"LastReset2\":\"0000-00-00 00:00\",\"Permissions\":\"d43, test678\",\"Tickets\":\"\",\"ChipsTransfer\":\"Yes\",\"ChipsTransfer2\":\"Yes\",\"ChipsAccept\":\"Yes\",\"ChipsAccept2\":\"Yes\",\"Suspend\":\"0000-00-00 00:00\",Chat\":\"0000-00-00 00:00\",\"ChatColor1\":\"\",\"ChatColor2\":\"\",\"FirstLogin\":\"2008-12-08 20:43\",\"LastLogin\":\"2018-09-01 15:04\",\"Logins\":47,\"Email\":\"joe@hotmail.com\",\"ValCode\":\"\",\"Avatar\":46,\"AvatarFile\":\"\",\"Custom1\":\"\",\"Custom2\":\"\",\"Custom3\":\"\",\"Custom4\":\"\",\"Custom5\":\"\",\"Note\":\"\",\"ERake\":6,\"ERake2\":0,\"PRake\":6,\"PRake2\":0,\"TFees\":0,\"TFees2\":0,\"RingChips\":0,\"RingChips2\":0,\"RegChips\":0,\"RegChips2\":0,\"SessionID\":\"\"}"
+  - paragraph [ref=e350]: "or in legacy format:"
+  - generic [ref=e351]: Result=Ok Player=AceMan Creator=Administrator AdminProfile= Title= Level= RealName=Joe K. PWHash=DE6D9A49-38129B6ECA0328ED6E48879699AD740FC2C7C4E4977D5DC527A99D99FCDCEDDF Gender=Male Location=Springfield Balance=25020 Balance2=1000 LastReset=2008-08-25 19:16 LastReset2=0000-00-00 00:00 Permissions=d43, test678 Tickets= ChipsTransfer=Yes ChipsTransfer2=Yes ChipsAccept=Yes ChipsAccept2=Yes Suspend=0000-00-00 00:00 Chat=0000-00-00 00:00 ChatColor1= ChatColor2= FirstLogin=2008-12-08 20:43 LastLogin=2018-09-01 15:04 Logins=47 Email=joe@hotmail.com ValCode= Avatar=46 AvatarFile= Custom1= Custom2= Custom3= Custom4= Custom5= Note= ERake=6 ERake2=0 PRake=6 PRake2=0 TFees=0 TFees2=0 RingChips=0 RingChips2=0 RegChips=0 RegChips2=0 SessionID=
+  - paragraph [ref=e352]: AccountsIncBalance - increments the primary account balance of a player. Use a Player parameter to specify the player's name and an Amount parameter to specify the number of chips to add to the account. A "Balance" parameter is returned in the result indicating the player's new chip balance. This command is safe to use even while the player is logged in and playing. Required parameters are Player and Amount.
+  - paragraph [ref=e353]: AccountsIncBalance2 - increments the secondary account balance of a player. Use a Player parameter to specify the player's name and an Amount parameter to specify the number of chips to add to the account. A "Balance2" parameter is returned in the result indicating the player's new chip balance. This command is safe to use even while the player is logged in and playing. Required parameters are Player and Amount.
+  - paragraph [ref=e354]: "AccountsList - retrieves a list of player accounts. Calling this with no parameters will just return the number of accounts. Set an optional Players field with a comma separated list (no spaces) of player names. Leave this field blank to retrieve all player accounts. Set the Fields parameter to a comma separated list (no spaces) of field names that you want returned. You may choose any combination of these fields:"
+  - paragraph [ref=e355]: Player, Creator, AdminProfile, Title, Level, RealName, PWHash, Location, Email, ValCode, Balance, Balance2, LastReset, LastReset2, Avatar, AvatarFile, Logins, FirstLogin, LastLogin, Gender, Permissions, Tickets, ChipsTransfer, ChipsTransfer2, ChipsAccept, ChipsAccept2, Suspend, Chat, ChatColor1, ChatColor2, Custom1, Custom2, Custom3, Custom4, Custom5, Note, ERake, ERake2, PRake, PRake2, TFees, TFees2.
+  - paragraph [ref=e356]: "In addition, you may include these live look-up fields. Doing so may significantly increase the processing time of the command, depending on the number of accounts, logins, and tables:"
+  - paragraph [ref=e357]: RingChips, RingChips2, RegChips, RegChips2, SessionID
+  - paragraph [ref=e358]: "A sample response with \"Fields=Player,Balance\" may look something like this (JSON format):"
+  - generic [ref=e359]: "{\"Result\":\"Ok\",\"Accounts\":3,\"Player\":[\"Aces123\",\"BoneCrusher\",\"David\"],\"Balance\":[2345,3470,1000]}"
+  - paragraph [ref=e360]: "or in legacy format:"
+  - generic [ref=e361]: Result=Ok Accounts=3 Player1=Aces123 Balance1=2345 Player2=BoneCrusher Balance2=3470 Player3=David Balance3=1000
+  - paragraph [ref=e362]: "AccountsNotes - Retrieves or sets the player notes written by a specified player about other players. The purpose of this command is for data backup or account transfers to another server. Player notes should be treated as private and confidential. Use a Player parameter to specify the player's name (the author of the notes), an Encrypted parameter set to \"Yes\" (or \"No\" when loading notes made prior to version 7), and an Action parameter with the value \"Get\", \"Set\", or \"Add\". Get retrieves all of the player notes written by the specified player. Required parameters are Player and Action (and possibly Data as described below). A sample response may look something like this (JSON format):"
+  - generic [ref=e363]: "{\"Result\":\"Ok\",\"Player\":\"Lady-X\",\"Count\":2,\"Label\":[],\"Subject\":[\"Aces123\",\"BoneCrusher\"],\"Color\":[\"4\",\"1\"],\"Chat\":[\"Yes\",\"Yes\"],\"Note\":[\"\",\"test\"]}"
+  - paragraph [ref=e364]: "or in legacy format:"
+  - generic [ref=e365]: Result=Ok Player=Lady-X Count=2 Subject1=Aces123 Color1=4 Chat1=Yes Note1= Subject2=BoneCrusher Color2=1 Chat2=Yes Note2=test
+  - paragraph [ref=e366]: When the Action parameter is "Set", use a Data parameter that contains a note set in JSON format (same as returned by the Get action). This will delete all of the player's existing notes and replace them with those specified in the Data parameter. Use a blank Data parameter to just delete all of a player's notes. When the Action parameter is "Add", the note set in the Data parameter is added to the player's existing notes and will only overwrite notes if they target the same subject.
+  - paragraph [ref=e367]: "AccountsPassword - verifies a player's password. Use a Player parameter to specify a player's name and a PW parameter for the player's password. The password will be hashed by the server and compared to the stored hash. Required parameters are Player and PW. If the hashes match the result will be (JSON format):"
+  - generic [ref=e368]: "{\"Result\":\"Ok\",\"Verified\":\"Yes\"}"
+  - paragraph [ref=e369]: "or in legacy format:"
+  - generic [ref=e370]: Result=Ok Verified=Yes
+  - paragraph [ref=e371]: "AccountsPermission - add, remove, or query individual permissions for a specified player. Use a Player parameter to specify the account, a Permission parameter for the permission token, and an Action parameter set to either \"Add\", \"Remove\", or \"Query\". Required parameters are Player, Permission, and Action. The Add and Remove actions will return a Result = Ok response if successful. The Query action will return a Yes or No response indicating if the player has the specified permission (JSON format):"
+  - paragraph
+  - generic [ref=e372]: "{\"Result\":\"Ok\",\"Query\":\"Yes\"}"
+  - paragraph [ref=e373]: "or in legacy format:"
+  - generic [ref=e374]: Result=Ok Query=Yes
+  - paragraph [ref=e375]: Note that if you want to get or replace a player's full list of permissions, use the AccountsGet and AccountsEdit commands.
+  - paragraph [ref=e376]: "AccountsSearch- returns the list of ring games and tournaments for a player specified by the Player parameter (required) where they are currently seated or in the waiting list. A typical response will look something like this (JSON format):"
+  - generic [ref=e377]: "{\"Result\":\"Ok\",\"Player\":\"Aces123\",\"LoggedIn\":\"Yes\",\"RingWaitCount\":1,\"RingPlayCount\":2,\"TrnyRegCount\":1,\"TrnyPlayCount\":2,\"RingWaitName\":[\"Ring Game #01\"],\"RingPlayName\":[\"Ring Game #02\",\"Ring Game #03\"],\"RingPlayChips\":[1250, 1500],\"TrnyRegName\":[\"Tournament #01\"],\"TrnyRegChips\":[1500],\"TrnyPlayName\":[\"Tournament #02\", \"Tournament #03\"],\"TrnyPlayTable\":[2,6]}"
+  - paragraph [ref=e378]: "or in legacy format:"
+  - generic [ref=e379]: "Result=Ok Player=Aces123 LoggedIn=Yes RingWaitCount=1 RingPlayCount=2 TrnyRegCount=1 TrnyPlayCount=2 RingWaitName1=Ring Game #01 RingPlayName1=Ring Game #02 RingPlayName2=Ring Game #03 RingPlayChips1=1250 RingPlayChips2=1500 TrnyRegName1=Tournament #01 TrnyRegChips1=1500 TrnyPlayName1=Tournament #02 TrnyPlayName2=Tournament #03 TrnyPlayTable1=2 TrnyPlayTable2=6"
+  - paragraph [ref=e380]: "AccountsSessionKey - creates a random 80-bit session key for a player specified by the Player parameter (required). The session key serves as a one-time-only password for an automated login. See the Technical Information/Startup Parameters topic for instructions on using session keys. A typical response will look something like this (JSON format):"
+  - generic [ref=e381]: "{\"Result\":\"Ok\",\"Player\":\"Aces123\",\"SessionKey\":\"1234567890ABCDEF1234\"}"
+  - paragraph [ref=e382]: "or in legacy format:"
+  - generic [ref=e383]: Result=Ok Player=Aces123 SessionKey=1234567890ABCDEF1234
+  - paragraph [ref=e384]: "AccountsTicket - add, remove, or query individual tournament tickets for a specified player. Use a Player parameter to specify the account, a Ticket parameter for the ticket token, and an Action parameter set to either \"Add\", \"Remove\", or \"Query\". Required parameters are Player, Ticket, and Action. The Add and Remove actions will return a Result = Ok response if successful. The Query action will return a Yes or No response (and a Count parameter beginning with version 5.09) indicating if the player has the specified ticket (JSON format):"
+  - paragraph
+  - generic [ref=e385]: "{\"Result\":\"Ok\",\"Query\":\"Yes\",\"Count\":1}"
+  - paragraph [ref=e386]: "or in legacy format:"
+  - generic [ref=e387]: Result=Ok Query=Yes Count=1
+  - paragraph [ref=e388]: Note that if you want to get or replace a player's full list of tickets, use the AccountsGet and AccountsEdit commands.
+  - paragraph [ref=e389]: "AccountsTransactions - query the player account transactions database (PlayerData.db). Use a Player parameter to specify the account (leave blank for all accounts), a DateStart parameter (defaults to 0000-00-00 00:00:00), a DateEnd parameter (defaults to 9999-99-99 99:99:99), and a UTC parameter, set to \"Yes\" to convert resulting timestamps to UTC or \"No\" (the default) to leave resulting timestamps in the server's time zone. The DateStart and DateEnd parameters are always in the server's time zone regardless of the UTC parameter. A typical result looks like this:"
+  - paragraph
+  - generic [ref=e390]: "{\"Result\":\"Ok\",\"Count\":2,\"Date\":[\"2022-03-27 15:11:29\",\"2022-03-27 15:23:02\"],\"Player\":[\"BoneCrusher\",\"BoneCrusher\"],\"Currency\":[\"Primary\",\"Primary\"],\"Change\":[\"-1200\",\"1210\"],\"Balance\":[\"25801\",\"27011\"],\"Source\":[\"Ring Game #03\",\"Ring Game #03\"]}"
+  - paragraph [ref=e391]: "or in legacy format:"
+  - generic [ref=e392]: "Result=Ok Count=2 Date1=2022-03-27 15:11:29 Player1=BoneCrusher Currency1=Primary Change1=-1200 Balance1=25801 Source1=Ring Game #03 Date2=2022-03-27 15:23:02 Player2=BoneCrusher Currency2=Primary Change2=1210 Balance2=27011 Source2=Ring Game #03"
+  - paragraph [ref=e393]: AccountsVerifyKey - verify a player's identity when using the "Player account URL" setting in the Client Settings group. That setting allows you to direct players to a custom URL from their Account menu in the Lobby. Your code must extract the "Player" and "Key" parameters that were embedded in the URL by the client interface. Pass those two parameters to this API call and look for an "Ok" result before performing any further action for that player account.
+  - paragraph
+  - heading "♣ Blacklist Commands" [level=4] [ref=e394]
+  - paragraph [ref=e395]: BlacklistAdd - add a new entry into the player blacklist. You must specify at least one parameter in the group of Player, IP, and PC.
+  - list [ref=e396]:
+    - listitem [ref=e397]: Date - optional date in the format of yyyy-mm-dd hh:mm, otherwise the current date will be used.
+    - listitem [ref=e398]: Player - player's name
+    - listitem [ref=e399]: IP - player's IP address
+    - listitem [ref=e400]: PC - player's computer ID in 8-digit hexadecimal format
+    - listitem [ref=e401]: Match - this is either "All" or "Any"
+    - listitem [ref=e402]: Note - optional note
+  - paragraph [ref=e403]: BlacklistDelete - deletes an item from the blacklist. Specify the item with an ID parameter (required).
+  - paragraph [ref=e404]: BlacklistEdit - edit one or more fields for a blacklist item, as specified with an ID parameter (required). Other than the ID, only include parameters for the fields you want to change, otherwise the field will retain its current value.
+  - list [ref=e405]:
+    - listitem [ref=e406]: Date- date in the format of yyyy-mm-dd hh:mm
+    - listitem [ref=e407]: Player - player's name
+    - listitem [ref=e408]: IP - player's IP address
+    - listitem [ref=e409]: PC - player's computer ID in 8-digit hexadecimal format
+    - listitem [ref=e410]: Match - this is either "All" or "Any"
+    - listitem [ref=e411]: Note - optional note
+  - paragraph [ref=e412]: "BlacklistGet - retrieves the fields for the specified blacklist item, as determined by an ID parameter (required). A sample response may look something like this (JSON format):"
+  - generic [ref=e413]: "{\"Result\":\"Ok\",\"ID\":\"00000001\",\"Date\":\"2008-06-20 08:17:01\",\"Player\":\"DeathBot\",\"IP\":\"12.34.56.789\",\"PC\":\"12345678\",\"Match\":\"Any\",\"Note\":\"Abusive player\"}"
+  - paragraph [ref=e414]: "or in legacy format:"
+  - generic [ref=e415]: Result=Ok ID=00000001 Date=2008-06-20 08:17:01 Player=DeathBot IP=12.34.56.789 PC=12345678 Match=Any Note=Abusive player
+  - paragraph [ref=e416]: "BlacklistList - retrieves a list of all blacklist entries. Calling this with no parameters will just return a count of entries. Set the Fields parameter to a comma separated list of field names that you want returned. Do not include spaces in the list. You may choose any combination of these fields:"
+  - paragraph [ref=e417]: ID, Date, Player, IP, PC, Match, Note
+  - paragraph [ref=e418]: "A sample response with \"Fields=ID,Player,IP\" may look something like this (JSON format):"
+  - generic [ref=e419]: "{\"Result\":\"Ok\",\"Count\":2,\"ID\":[\"00000001\",\"00000002\"],\"Player\":[\"DeathBot\",\"TroubleMaker\"],\"IP\":[\"12.34.56.789\",\"98.76.54.321\"]}"
+  - paragraph [ref=e420]: "or in legacy format:"
+  - generic [ref=e421]: Result=Ok Count=2 ID1=00000001 Player1=DeathBot IP1=12.34.56.789 ID2=00000002 Player2=TroubleMaker IP2=98.76.54.321
+  - heading "♣ Connection Commands" [level=4] [ref=e422]
+  - paragraph [ref=e423]: "ConnectionsGet - retrieves values for the connection specified by the SessionID parameter (required). A typical response will look something like this (JSON format):"
+  - generic [ref=e424]: "{\"Result\":\"Ok\",\"SessionID\":\"00000001\",\"Status\":\"Ok\",\"Player\":\"Aces123\",\"Lang\":0,\"PC\":\"12345678\",\"IP\":\"12.34.56.789\",\"Proxy\":\"\",\"Connect\":\"2015-01-22 14:07:23\",\"Login\":\"2015-01-22 14:24:56\",\"LastAction\":\"2015-01-22 14:52:01\",\"PacketsIn\":123,\"PacketsOut\":890}"
+  - paragraph [ref=e425]: "or in legacy format:"
+  - generic [ref=e426]: Result=Ok SessionID=00000001 Status=Ok Player=Aces123 Lang=0 PC=12345678 IP=12.34.56.789 Proxy= Connect=2015-01-22 14:07:23 Login=2015-01-22 14:24:56 LastAction=2015-01-22 14:52:01 PacketsIn=123 PacketsOut=890
+  - paragraph [ref=e427]: "ConnectionsList - retrieves the list of all current connections. Calling this with no parameters will just return the number of connections. Set the Fields parameter to a comma separated list of field names that you want returned. Do not include spaces in the list. You may choose any combination of these fields:"
+  - paragraph [ref=e428]: SessionID, Status, Player, Lang, PC, IP, Proxy, Connect, Login, LastAction, PacketsIn, PacketsOut
+  - paragraph [ref=e429]: "A sample response with \"Fields=Player,IP\" may look something like this (JSON format):"
+  - generic [ref=e430]: "{\"Result\":\"Ok\",\"Connections\":2,\"Player\":[\"Aces123\",\"BoneCrusher\"],\"IP\":[\"12.34.56.789\",\"98.76.54.321\"]}"
+  - paragraph [ref=e431]: "or in legacy format:"
+  - generic [ref=e432]: Result=Ok Connections=2 Player1=Aces123 IP1=12.34.56.789 Player2=BoneCrusher IP2=98.76.54.321
+  - paragraph [ref=e433]: ConnectionsMessage - sends a popup message to the person at the specified SessionID parameter (required) with the message text specified in the Message parameter (required). Use an asterisk (*) as the SessionID to send the message to all connections.
+  - paragraph [ref=e434]: ConnectionsTerminate - terminates the connection at the specified SessionID parameter (required).
+  - heading "♣ Log Commands" [level=4] [ref=e435]
+  - paragraph [ref=e436]: LogsAddEvent - adds a line to the Event Log without performing any other command. Use the Log parameter to append custom text to the entry. Note that this Log parameter is an option with all of the other API commands, also.
+  - paragraph [ref=e437]: "LogsCallback - call without any parameters to retrieve a list of dates where a callback log file was created. This command was added in version 5.17. Example output will look something like this (JSON format):"
+  - generic [ref=e438]: "{\"Result\":\"Ok\",\"Files\":3,\"Date\":[\"2017-09-01\",\"2017-09-06\",\"2017-09-07\"]}"
+  - paragraph [ref=e439]: "or in legacy format:"
+  - generic [ref=e440]: Result=Ok Files=3 Date1=2017-09-01 Date2=2017-09-06 Date3=2017-09-07
+  - paragraph [ref=e441]: "Call with a Date parameter in the format of yyyy-mm-dd to retrieve the contents of a callback log file. Use the optional Start and Count parameters to specify a range of lines to retrieve. The first line number is 0. A Start value of -1 will retrieve lines from the end of the file. A Count value of 0 will retrieve the remaining lines from the starting point. Each line in the callback log is a JSON object. Example output will look something like this (JSON format):"
+  - generic [ref=e442]: "{\"Result\":\"Ok\",\"Start\":3,\"Count\":3,\"Data\":[{\"Event\":\"LobbyChat\",\"Player\":\"pm2\",\"Title\":\"\",\"Chat\":\"howdy\",\"Time\":\"2017-09-07 15:24:52\"},{\"Event\":\"Balance\",\"Player\":\"pm1\",\"Change\":\"-1200\",\"Balance\":\"96280\",\"Source\":\"Ring Game #06\",\"Time\":\"2017-09-07 15:25:02\"},{\"Event\":\"RingGameJoin\",\"Name\":\"Ring Game #06\",\"Player\":\"pm1\",\"Amount\":\"1200\",\"Time\":\"2017-09-07 15:25:03\"}]}"
+  - paragraph [ref=e443]: "or in legacy format:"
+  - generic [ref=e444]: "Result=Ok Start=3 Count=3 {\"Event\":\"LobbyChat\",\"Player\":\"pm2\",\"Title\":\"\",\"Chat\":\"howdy\",\"Time\":\"2017-09-07 15:24:52\"} {\"Event\":\"Balance\",\"Player\":\"pm1\",\"Change\":\"-1200\",\"Balance\":\"96280\",\"Source\":\"Ring Game #06\",\"Time\":\"2017-09-07 15:25:02\"} {\"Event\":\"RingGameJoin\",\"Name\":\"Ring Game #06\",\"Player\":\"pm1\",\"Amount\":\"1200\",\"Time\":\"2017-09-07 15:25:03\"}"
+  - paragraph [ref=e445]: "LogsError - call without any parameters to retrieve a list of dates where an error log file was created. Example output will look something like this (JSON format):"
+  - generic [ref=e446]: "{\"Result\":\"Ok\",\"Files\":3,\"Date\":[\"2015-02-01\",\"2015-02-05\",\"2015-02-06\"]}"
+  - paragraph [ref=e447]: "or in legacy format:"
+  - generic [ref=e448]: Result=Ok Files=3 Date1=2015-02-01 Date2=2015-02-05 Date3=2015-02-06
+  - paragraph [ref=e449]: "Call with a Date parameter in the format of yyyy-mm-dd to retrieve the contents of an error log file. Beginning with version 5.17, use the optional Start and Count parameters to specify a range of lines to retrieve. The first line number is 0. A Start value of -1 will retrieve lines from the end of the file. A Count value of 0 will retrieve the remaining lines from the starting point. Example output will look something like this (JSON format):"
+  - generic [ref=e450]: "{\"Result\":\"Ok\",\"Start\":0,\"Count\":2,\"Data\":[\"2015-02-06 13:21:42|Remote admin whitelist denial for 127.0.0.1\",\"2015-02-06 13:29:02|API whitelist denial for 192.168.1.100\"]}"
+  - paragraph [ref=e451]: "or in legacy format:"
+  - generic [ref=e452]: Result=Ok Start=0 Count=2 2015-02-06 13:21:42|Remote admin whitelist denial for 127.0.0.1 2015-02-06 13:29:02|API whitelist denial for 192.168.1.100
+  - paragraph [ref=e453]: "LogsEvent - call without any parameters to retrieve a list of dates where an event log file was created. Example output will look something like this (JSON format):"
+  - generic [ref=e454]: "{\"Result\":\"Ok\",\"Files\":3,\"Date\":[\"2015-02-01\",\"2015-02-05\",\"2015-02-06\"]}"
+  - paragraph [ref=e455]: "or in legacy format:"
+  - generic [ref=e456]: Result=Ok Files=3 Date1=2015-02-01 Date2=2015-02-05 Date3=2015-02-06
+  - paragraph [ref=e457]: "Call with a Date parameter in the format of yyyy-mm-dd to retrieve the contents of an event log file. Beginning with version 5.17, use the optional Start and Count parameters to specify a range of lines to retrieve. The first line number is 0. A Start value of -1 will retrieve lines from the end of the file. A Count value of 0 will retrieve the remaining lines from the starting point. Example output will look something like this (JSON format):"
+  - generic [ref=e458]: "{\"Result\":\"Ok\",\"Start\":0,\"Count\":3,\"Data\":[\"2015-02-10 18:36:55|System|Game server started\",\"2015-02-10 18:36:55|Table|Ring Game #1 opened\",\"2015-02-10 18:36:55|Table|Tournament #1 opened\"]}"
+  - paragraph [ref=e459]: "or in legacy format:"
+  - generic [ref=e460]: "Result=Ok Start=0 Count=3 2015-02-10 18:36:55|System|Game server started 2015-02-10 18:36:55|Table|Ring Game #1 opened 2015-02-10 18:36:55|Table|Tournament #1 opened"
+  - paragraph [ref=e461]: "LogsHandHistory - call without any parameters to retrieve a list of dates and table names where a hand history file was created. Example output will look something like this (JSON format):"
+  - generic [ref=e462]: "{\"Result\":\"Ok\",\"Files\":2,\"Date\":[\"2015-02-01\",\"2015-02-05\"],\"Name\":[\"Ring Game #1\",\"Tournament #3 - Table 1\"]}"
+  - paragraph [ref=e463]: "or in legacy format:"
+  - generic [ref=e464]: "Result=Ok Files=2 Date1=2015-02-01 Name1=Ring Game #1 Date2=2015-02-05 Name2=Tournament #3 - Table 1"
+  - paragraph [ref=e465]: "Call with a Date parameter in the format of yyyy-mm-dd and a Name parameter to retrieve the contents of a hand history file. Beginning with version 5.17, use the optional Start and Count parameters to specify a range of lines to retrieve. The first line number is 0. A Start value of -1 will retrieve lines from the end of the file. A Count value of 0 will retrieve the remaining lines from the starting point. Example output will look something like this (JSON format):"
+  - generic [ref=e466]: "{\"Result\":\"Ok\",\"Start\":0,\"Count\":13,\"Data\":[\"Hand #3859-1 - 2015-02-18 18:31:12\",\"Game: No Limit Hold'em (500 - 2000) - Blinds 10/20\",\"Site: Briggs Softworks\",\"Table: Ring Game #1\",\"Seat 4: pm2 (2000)\",\"Seat 9: pm1 (1180)\",\"pm2 has the dealer button\",\"pm2 posts small blind 10\",\"pm1 posts big blind 20\",\"** Hole Cards **\",\"pm2 folds\",\"pm1 refunded 10\",\"pm1 wins Pot (20)\"]}"
+  - paragraph [ref=e467]: "or in legacy format:"
+  - generic [ref=e468]: "Result=Ok Start=0 Count=13 Hand #3859-1 - 2015-02-18 18:31:12 Game: No Limit Hold'em (500 - 2000) - Blinds 10/20 Site: Briggs Softworks Table: Ring Game #1 Seat 4: pm2 (2000) Seat 9: pm1 (1180) pm2 has the dealer button pm2 posts small blind 10 pm1 posts big blind 20 ** Hole Cards ** pm2 folds pm1 refunded 10 pm1 wins Pot (20)"
+  - paragraph [ref=e469]: Call with a Hand parameter (indicating the hand number) to retrieve the hand history of a single hand. Leave the other parameters blank when using the Hand parameter. The server caches the last 1000 hands (250 hands prior to version 6.16, 100 hands prior to version 5.20) played so the specified hand must still be in the cache or an error will be returned. Although the full hand number can be specified, only the first portion (left of the dash) is required. Use the Hand callback event system to get notified when a new hand is available.
+  - paragraph [ref=e470]: "LogsLobbyChat - call without any parameters to retrieve a list of dates where a lobby chat log file was created. Example output will look something like this (JSON format):"
+  - generic [ref=e471]: "{\"Result\":\"Ok\",\"Files\":3,\"Date\":[\"2015-02-01\",\"2015-02-05\",\"2015-02-06\"]}"
+  - paragraph [ref=e472]: "or in legacy format:"
+  - generic [ref=e473]: Result=Ok Files=3 Date1=2015-02-01 Date2=2015-02-05 Date3=2015-02-06
+  - paragraph [ref=e474]: "Call with a Date parameter in the format of yyyy-mm-dd to retrieve the contents of a lobby chat log file. Beginning with version 5.17, use the optional Start and Count parameters to specify a range of lines to retrieve. The first line number is 0. A Start value of -1 will retrieve lines from the end of the file. A Count value of 0 will retrieve the remaining lines from the starting point. Example output will look something like this (JSON format):"
+  - generic [ref=e475]: "{\"Result\":\"Ok\",\"Start\":0,\"Count\":2,\"Data\":[\"2015-02-10 18:35:55 Alice: are you going to play in the tournament?\",\"2015-02-10 18:36:14 Bob: yeah, see you there\"]}"
+  - paragraph [ref=e476]: "or in legacy format:"
+  - generic [ref=e477]: "Result=Ok Start=0 Count=2 2015-02-10 18:35:55 Alice: are you going to play in the tournament? 2015-02-10 18:36:14 Bob: yeah, see you there"
+  - heading "♣ Ring Game Commands" [level=4] [ref=e478]
+  - paragraph [ref=e479]: "RingGamesAdd - adds a new ring game to the system. The newly created game will be in an offline state. Name is the only required parameter. Other parameters not specified will receive default values:"
+  - list [ref=e480]:
+    - listitem [ref=e481]: Name - a unique name, from 1 to 40 characters
+    - listitem [ref=e482]: Creator - Name of admin that created game
+    - listitem [ref=e483]: Description - optional table description, up to 500 characters
+    - listitem [ref=e484]: Auto - set to "Yes" or "No" to put game online when server is started
+    - listitem [ref=e485]: Game - specify "Limit Hold'em", "Pot Limit Hold'em", "No Limit Hold'em", "Cap Limit Hold'em", "Pot Limit 6+Hold'em", "No Limit 6+Hold'em", "Cap Limit 6+Hold'em", "Limit Omaha", "Pot Limit Omaha", "No Limit Omaha", "Cap Limit Omaha", "Limit Omaha Hi-Lo", "Pot Limit Omaha Hi-Lo", "No Limit Omaha Hi-Lo", "Cap Limit Omaha Hi-Lo", "Limit Omaha-5", "Pot Limit Omaha-5", "No Limit Omaha-5", "Cap Limit Omaha-5", "Limit Omaha-5 Hi-Lo", "Pot Limit Omaha-5 Hi-Lo", "No Limit Omaha-5 Hi-Lo", "Cap Limit Omaha-5 Hi-Lo", "Limit Omaha-6", "Pot Limit Omaha-6", "No Limit Omaha-6", "Cap Limit Omaha-6", "Limit Omaha-6 Hi-Lo", "Pot Limit Omaha-6 Hi-Lo", "No Limit Omaha-6 Hi-Lo", "Cap Limit Omaha-6 Hi-Lo", "Limit Courchevel", "Pot Limit Courchevel", "No Limit Courchevel", "Cap Limit Courchevel", "Limit Courchevel Hi-Lo", "Pot Limit Courchevel Hi-Lo", "No Limit Courchevel Hi-Lo", "Cap Limit Courchevel Hi-Lo", "Limit Razz", "Limit Stud", "Limit Stud Hi-Lo", "Mixed", "Mixed Choice"
+    - listitem [ref=e486]: MixedList - if Game is set to "Mixed" then this field must contain a comma-separated list of two or more game types
+    - listitem [ref=e487]: MixedHands - number of hands in mixed rounds, 0 to 1000
+    - listitem [ref=e488]: PW - (optional) specify a password needed to take a seat
+    - listitem [ref=e489]: Private - set to "Yes" to prevent observing without the password or "No" to allow observers
+    - listitem [ref=e490]: PermPlay - play permission token, 15 alphanumeric characters max
+    - listitem [ref=e491]: PermObserve - observe permission token, 15 alphanumeric characters max
+    - listitem [ref=e492]: PermPlayerChat - player chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e493]: PermObserverChat - observer chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e494]: SuspendChatAllIn - either "Yes" or "No"
+    - listitem [ref=e495]: Seats - number of seats, from 2 to 10
+    - listitem [ref=e496]: StartMin - 2 to 10
+    - listitem [ref=e497]: StartCode 0 to 999999
+    - listitem [ref=e498]: PrimaryCurrency - Yes for primary currency or No for secondary currency
+    - listitem [ref=e499]: SmallestChip - 0.01, 0.05, 0.25, 1, 5, 25, 100, 500, 1000, 5000, 25000, 100000, 500000, 1000000, 5000000, 25000000, 100000000, 500000000, 1000000000
+    - listitem [ref=e500]: BuyInMin - number of chips
+    - listitem [ref=e501]: BuyInMax - number of chips
+    - listitem [ref=e502]: BuyInDef - number of chips
+    - listitem [ref=e503]: CapLimit - number of chips for CL games
+    - listitem [ref=e504]: RakePercent - percent number (Pro/Gold feature)
+    - listitem [ref=e505]: RakeCap - number of chips, or 0 for no cap (Pro/Gold feature)
+    - listitem [ref=e506]: TurnClock - number of seconds, from 10 to 120
+    - listitem [ref=e507]: TurnWarning - number of seconds, from 5 to 119
+    - listitem [ref=e508]: TimeBank - number of seconds, from 0 to 600
+    - listitem [ref=e509]: BankSync - "Yes" or "No"
+    - listitem [ref=e510]: BankReset - number of hands, from 0 to 999999
+    - listitem [ref=e511]: DisconBank - 0 to 180 seconds
+    - listitem [ref=e512]: SmallBlind - number of chips
+    - listitem [ref=e513]: BigBlind - number of chips
+    - listitem [ref=e514]: AllowStraddle - "Yes" or "No"
+    - listitem [ref=e515]: SmallBet - number of chips
+    - listitem [ref=e516]: BigBet - number of chips
+    - listitem [ref=e517]: Ante - number of chips
+    - listitem [ref=e518]: AnteAll - "Yes" or "No"
+    - listitem [ref=e519]: BringIn - number of chips
+    - listitem [ref=e520]: DupeIPs - set to "Yes" or "No" to allow or disallow players with the same IP address at the table
+    - listitem [ref=e521]: RatholeMinutes - number of minutes, from 0 to 120
+    - listitem [ref=e522]: RunItTwice - "Yes" or "No"
+    - listitem [ref=e523]: SitoutMinutes - number of minutes, from 1 to 120
+    - listitem [ref=e524]: SitoutRelaxed - set to "Yes" or "No"
+    - listitem [ref=e525]: TableGraphic - set to full path for the table graphic. Leave blank for default site table graphic.
+    - listitem [ref=e526]: "TableColorOn - #rrggbb format, leave blank for default."
+    - listitem [ref=e527]: "TableColorOff - #rrggbb format, leave blank for default."
+    - listitem [ref=e528]: Note - private note, up to 500 characters
+  - paragraph [ref=e529]: RingGamesDelete - deletes the ring game specified by the Name parameter (required). The game must already be in an offline state before it can be deleted.
+  - paragraph [ref=e530]: RingGamesEdit - edits one or more properties of an offline ring game specified by the Name parameter (required). Fields not specified will retain their current value.
+  - list [ref=e531]:
+    - listitem [ref=e532]: NewName - use this parameter to change the name of the ring game
+    - listitem [ref=e533]: Creator - Name of admin that created game
+    - listitem [ref=e534]: Description - optional table description, up to 500 characters
+    - listitem [ref=e535]: Auto - set to "Yes" or "No" to put game online when server is started
+    - listitem [ref=e536]: Game - specify "Limit Hold'em", "Pot Limit Hold'em", "No Limit Hold'em", "Cap Limit Hold'em", "Pot Limit 6+Hold'em", "No Limit 6+Hold'em", "Cap Limit 6+Hold'em", "Limit Omaha", "Pot Limit Omaha", "No Limit Omaha", "Cap Limit Omaha", "Limit Omaha Hi-Lo", "Pot Limit Omaha Hi-Lo", "No Limit Omaha Hi-Lo", "Cap Limit Omaha Hi-Lo", "Limit Omaha-5", "Pot Limit Omaha-5", "No Limit Omaha-5", "Cap Limit Omaha-5", "Limit Omaha-5 Hi-Lo", "Pot Limit Omaha-5 Hi-Lo", "No Limit Omaha-5 Hi-Lo", "Cap Limit Omaha-5 Hi-Lo", "Limit Omaha-6", "Pot Limit Omaha-6", "No Limit Omaha-6", "Cap Limit Omaha-6", "Limit Omaha-6 Hi-Lo", "Pot Limit Omaha-6 Hi-Lo", "No Limit Omaha-6 Hi-Lo", "Cap Limit Omaha-6 Hi-Lo", "Limit Courchevel", "Pot Limit Courchevel", "No Limit Courchevel", "Cap Limit Courchevel", "Limit Courchevel Hi-Lo", "Pot Limit Courchevel Hi-Lo", "No Limit Courchevel Hi-Lo", "Cap Limit Courchevel Hi-Lo", "Limit Razz", "Limit Stud", "Limit Stud Hi-Lo", "Mixed", "Mixed Choice"
+    - listitem [ref=e537]: MixedList - if Game is set to "Mixed" then this field must contain a comma-separated list of two or more game types
+    - listitem [ref=e538]: MixedHands - number of hands in mixed rounds, 0 to 1000
+    - listitem [ref=e539]: PW - (optional) specify a password needed to take a seat
+    - listitem [ref=e540]: Private - set to "Yes" to prevent observing without the password or "No" to allow observers
+    - listitem [ref=e541]: PermPlay - play permission token, 15 alphanumeric characters max
+    - listitem [ref=e542]: PermObserve - observe permission token, 15 alphanumeric characters max
+    - listitem [ref=e543]: PermPlayerChat - player chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e544]: PermObserverChat - observer chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e545]: SuspendChatAllIn - either "Yes" or "No"
+    - listitem [ref=e546]: Seats - number of seats, from 2 to 10
+    - listitem [ref=e547]: StartMin - 2 to 10
+    - listitem [ref=e548]: StartCode 0 to 999999
+    - listitem [ref=e549]: PrimaryCurrency - Yes for primary currency or No for secondary currency
+    - listitem [ref=e550]: SmallestChip - 0.01, 0.05, 0.25, 1, 5, 25, 100, 500, 1000, 5000, 25000, 100000, 500000, 1000000, 5000000, 25000000, 100000000, 500000000, 1000000000
+    - listitem [ref=e551]: BuyInMin - number of chips
+    - listitem [ref=e552]: BuyInMax - number of chips
+    - listitem [ref=e553]: BuyInDef - number of chips
+    - listitem [ref=e554]: CapLimit - number of chips for CL games
+    - listitem [ref=e555]: RakePercent - percent number (Pro/Gold feature)
+    - listitem [ref=e556]: RakeCap - number of chips, or 0 for no cap (Pro/Gold feature)
+    - listitem [ref=e557]: TurnClock - number of seconds, from 10 to 120
+    - listitem [ref=e558]: TurnWarning - number of seconds, from 5 to 119
+    - listitem [ref=e559]: TimeBank - number of seconds, from 0 to 600
+    - listitem [ref=e560]: BankSync - "Yes" or "No"
+    - listitem [ref=e561]: BankReset - number of hands, from 0 to 999999
+    - listitem [ref=e562]: DisconBank - 0 to 180 seconds
+    - listitem [ref=e563]: SmallBlind - number of chips
+    - listitem [ref=e564]: BigBlind - number of chips
+    - listitem [ref=e565]: AllowStraddle - "Yes" or "No"
+    - listitem [ref=e566]: SmallBet - number of chips
+    - listitem [ref=e567]: BigBet - number of chips
+    - listitem [ref=e568]: Ante - number of chips
+    - listitem [ref=e569]: AnteAll - "Yes" or "No"
+    - listitem [ref=e570]: BringIn - number of chips
+    - listitem [ref=e571]: DupeIPs - set to "Yes" or "No" to allow or disallow players with the same IP address at the table
+    - listitem [ref=e572]: RatholeMinutes - number of minutes, from 0 to 120
+    - listitem [ref=e573]: RunItTwice - "Yes" or "No"
+    - listitem [ref=e574]: SitoutMinutes - number of minutes, from 1 to 120
+    - listitem [ref=e575]: SitoutRelaxed - set to "Yes" or "No"
+    - listitem [ref=e576]: TableGraphic - set to full path for the table graphic. Leave blank for default site table graphic.
+    - listitem [ref=e577]: "TableColorOn - #rrggbb format, leave blank for default."
+    - listitem [ref=e578]: "TableColorOff - #rrggbb format, leave blank for default."
+    - listitem [ref=e579]: Note - private note, up to 500 characters
+  - paragraph [ref=e580]: RingGamesEject - eject a player specified by the Player parameter (required) from the ring game (or waiting list) specified by the Name parameter (required).
+  - paragraph [ref=e581]: "RingGamesGet - retrieve the settings for the ring game specified by the Name parameter (required). A sample response will look something like this (JSON format):"
+  - generic [ref=e582]: "{\"Result\":\"Ok\", \"Name\":\"Ring Game #1\", \"Status\":\"Playing: 9\", \"Creator\":\"Administrator\", \"Description\":\"\", \"Auto\":\"Yes\", \"Game\":\"No Limit Hold'em\", \"MixedList\":\"\", \"MixedHands\":0, \"PW\":\"\", \"Private\":\"No\", \"PermPlay\":\"\", \"PermObserve\":\"\", \"PermPlayerChat\":\"\", \"PermObserverChat\":\"\", \"SuspendChatAllIn\":\"No\", \"Seats\":9, \"StartMin\":2, \"StartCode\":0, \"PrimaryCurrency\":\"Yes\", \"SmallestChip\":1, \"BuyInMin\":500, \"BuyInMax\":2500, \"BuyInDef\":1500, \"CapLimit\":0, \"RakePercent\":0, \"RakeCap\":0, \"TurnClock\":30, \"TurnWarning\":10, \"TimeBank\":60, \"BankSync\":\"Yes\", \"BankReset\":0, \"DisconBank\":60, \"SmallBlind\":10, \"BigBlind\":20, \"AllowStraddle\":\"No\", \"SmallBet\":0, \"BigBet\":0, \"Ante\":0, \"AnteAll\":\"No\", \"BringIn\":0, \"DupeIPs\":\"No\", \"RatholeMinutes\":0, \"RunItTwice\":\"No\", \"SitoutMinutes\":10, \"SitoutRelaxed\":\"No\", \"TableGraphic\":\"\", \"TableColorOn\":\"\", \"TableColorOff\":\"\", \"Note\":\"\"}"
+  - paragraph [ref=e583]: "or in legacy format:"
+  - generic [ref=e584]: "Result=Ok Name=Ring Game #1 Status=Playing: 9 Creator=Administrator Description= Auto=Yes Game=No Limit Hold'em MixedList= MixedHands=0 PW= Private=No PermPlay= PermObserve= PermPlayerChat= PermObserverChat= SuspendChatAllIn=No Seats=9 StartMin=2 StartCode=0 PrimaryCurrency=Yes SmallestChip=1 BuyInMin=500 BuyInMax=2500 BuyInDef=1500 CapLimit=0 RakePercent=0 RakeCap=0 TurnClock=30 TurnWarning=10 TimeBank=60 BankSync=Yes BankReset=0 DisconBank=60 SmallBlind=10 BigBlind=20 AllowStraddle=No SmallBet=0 BigBet=0 Ante=0 AnteAll=No BringIn=0 DupeIPs=No RatholeMinutes=0 RunItTwice=No SitoutMinutes=10 SitoutRelaxed=No TableGraphic= TableColorOn= TableColorOff= Note="
+  - paragraph [ref=e585]: "RingGamesList - retrieves the list of all ring games. Calling this with no parameters will just return the number of ring games. Set the Fields parameter to a comma separated list of field names that you want returned. Do not include spaces in the list. You may choose any combination of these fields:"
+  - paragraph [ref=e586]: Name, Status, Creator, Description, Auto, Game, MixedList, MixedHands, PW, Private, PermPlay, PermObserve, PermPlayerChat, PermObserverChat, SuspendChatAllIn, Seats, StartMin, StartCode, PrimaryCurrency, SmallestChip, BuyInMin, BuyInMax, BuyInDef, CapLimit, RakePercent, RakeCap, TurnClock, TurnWarning, TimeBank, BankSync, BankReset, DisconBank, SmallBlind, BigBlind, AllowStraddle, SmallBet, BigBet, Ante, AnteAll, BringIn, DupeIPs, RatholeMinutes, RunItTwice, SitoutMinutes, SitoutRelaxed, TableGraphic, TableColorOn, TableColorOff, Note
+  - paragraph [ref=e587]: "A sample response with \"Fields=Name,Game\" may look something like this (JSON format):"
+  - generic [ref=e588]: "{\"Result\":\"Ok\",\"RingGames\":3,\"Name\":[\"Ring Game #1\",\"Ring Game #2\",\"Ring Game #3\"],\"Game\":[\"No Limit Hold'em\",\"Pot Limit Hold'em\",\"Limit Hold'em\"]}"
+  - paragraph [ref=e589]: "or in legacy format:"
+  - generic [ref=e590]: "Result=Ok RingGames=3 Name1=Ring Game #1 Game1=No Limit Hold'em Name2=Ring Game #2 Game2=Pot Limit Hold'em Name3=Ring Game #3 Game3=Limit Hold'em"
+  - paragraph [ref=e591]: RingGamesMessage - sends an Administrator message to the chat box for the ring game specified by the Name parameter (required). Put the text of the message in the Message parameter (required). Use an asterisk (*) as the Name parameter to send the message to all ring game tables.
+  - paragraph [ref=e592]: RingGamesOffline - closes the ring game specified by the Name parameter (required) and puts it in an offline state. Set an optional Now parameter to "Yes" to close the table immediately. Otherwise, the table will close when the current hand is finished.
+  - paragraph [ref=e593]: RingGamesOnline - puts the ring game specified by the Name parameter (required) into an online state, making it available for play.
+  - paragraph [ref=e594]: RingGamesOpen - opens a ring game table in the player client for the specified player (who must already be logged in). Specify the ring game by the Name parameter (required) and the player by the Player parameter (required).
+  - paragraph [ref=e595]: RingGamesPause - pauses an online ring game specified by the Name parameter (required). Set parameter Now to "Yes" (the default) to pause the table immediately or to "No" to pause it once the current hand completes.
+  - paragraph [ref=e596]: "RingGamesPlaying - retrieves the list of seated players for the ring game specified by the Name parameter (required). The Away field shows the number of minutes that a player has been sitting out. A sample response may look something like this (JSON format):"
+  - generic [ref=e597]: "{\"Result\":\"Ok\",\"Count\":2,\"Player\":[\"Aces123\",\"BoneCrusher\"],\"Seat\":[2,7],\"Chips\":[430,650],\"Net\":[-70,150],\"Away\":[0,0]}"
+  - paragraph [ref=e598]: "or in legacy format:"
+  - generic [ref=e599]: Result=Ok Player1=Aces123 Seat1=2 Chips1=430 Net1=-70 Away1=0 Player2=BoneCrusher Seat2=7 Chips2=650 Net2=150 Away2=0 Count=2
+  - paragraph [ref=e600]: RingGamesResume - resumes a paused ring game specified by the Name parameter (required).
+  - paragraph [ref=e601]: RingGamesStart - manually starts the ring game specified by the Name parameter (required). The table must be in waiting mode with at least two ready players seated.
+  - paragraph [ref=e602]: "RingGamesWaiting - retrieves the list of players in the waiting list for the ring game specified by the Name parameter (required). A sample response will look something like this (JSON format):"
+  - generic [ref=e603]: "{\"Result\":\"Ok\",\"Count\":3,\"Wait\":[\"Aces123\",\"BoneCrusher\",\"Wizard\"]}"
+  - paragraph [ref=e604]: "or in legacy format:"
+  - generic [ref=e605]: Result=Ok Count=3 Wait1=Aces123 Wait2=BoneCrusher Wait3=Wizard
+  - heading "♣ System Commands" [level=4] [ref=e606]
+  - paragraph [ref=e607]: "SystemAccount - This command allows you to get or change the primary balance of a house account, specified by the Account parameter (\"Master\", \"Ring\", \"Rake\", \"Tourney\", or \"EntryFee\"). Set an Action parameter (\"Set\", \"Inc\", or \"Dec\") along with an Amount parameter to set, increment, or decrement the specified account by that amount. To retrieve the current balance, set Action to \"Get\" (Amount parameter not used in this case). The result will contain a Balance parameter indicating the new balance and a Change parameter indicating the difference between the previous balance and the new balance. In JSON format, a typical result will look something like this:"
+  - generic [ref=e608]: "{\"Result\":\"Ok\",\"Balance\":123456,\"Change\":-1000}"
+  - paragraph [ref=e609]: "or in legacy format:"
+  - generic [ref=e610]: Result=Ok Balance=123456 Change=-1000
+  - paragraph [ref=e611]: "SystemAccount2 - This command allows you to get or change the secondary balance of a house account, specified by the Account parameter (\"Master2\", \"Ring2\", \"Rake2\", \"Tourney2\", or \"EntryFee2\"). Set an Action parameter (\"Set\", \"Inc\", or \"Dec\") along with an Amount parameter to set, increment, or decrement the specified account by that amount. To retrieve the current balance, set Action to \"Get\" (Amount parameter not used in this case). The result will contain a Balance parameter indicating the new balance and a Change parameter indicating the difference between the previous balance and the new balance. In JSON format, a typical result will look something like this:"
+  - generic [ref=e612]: "{\"Result\":\"Ok\",\"Balance\":123456,\"Change\":-1000}"
+  - paragraph [ref=e613]: "or in legacy format:"
+  - generic [ref=e614]: Result=Ok Balance=123456 Change=-1000
+  - paragraph [ref=e615]: "SystemBalance - This command returns the current primary balance of all house accounts plus the sum total of all player accounts. A House parameter is also returned with the total of all house accounts (not including the Players account). There are no calling parameters for this command. A typical result will look like this in JSON format:"
+  - generic [ref=e616]: "{\"Result\":\"Ok\",\"Master\":123456,\"Ring\":1000,\"Rake\":10,\"Tourney\":2000,\"EntryFee\":20,\"House\":126486,\"Players\":123456789}"
+  - paragraph [ref=e617]: "or in legacy format:"
+  - generic [ref=e618]: Result=Ok Master=123456 Ring=1000 Rake=10 Tourney=2000 EntryFee=20 House=126486 Players=123456789
+  - paragraph [ref=e619]: "SystemBalance2 - This command returns the current secondary balance of all house accounts plus the sum total of all player accounts. A House parameter is also returned with the total of all house accounts (not including the Players account). There are no calling parameters for this command. A typical result will look like this in JSON format:"
+  - generic [ref=e620]: "{\"Result\":\"Ok\",\"Master2\":123456,\"Ring2\":1000,\"Rake2\":10,\"Tourney2\":2000,\"EntryFee2\":20,\"House2\":126486,\"Players2\":123456789}"
+  - paragraph [ref=e621]: "or in legacy format:"
+  - generic [ref=e622]: Result=Ok Master2=123456 Ring2=1000 Rake2=10 Tourney2=2000 EntryFee2=20 House2=126486 Players2=123456789
+  - paragraph [ref=e623]: "SystemGet - gets the value for the specified Property parameter (required). For example, if you specified \"FilePort\" for the Property, a typical response would look like this (JSON format):"
+  - generic [ref=e624]: "{\"Result\":\"Ok\",\"Value\":\"8087\"}"
+  - paragraph [ref=e625]: "or in legacy format:"
+  - generic [ref=e626]: Result=Ok Value=8087
+  - paragraph [ref=e627]: Beginning with version 5.11, you can specify an asterisk (*) for the Property parameter and the values of all system properties will be returned.
+  - paragraph [ref=e628]: "The list of available Property names are as follows:"
+  - list [ref=e629]:
+    - listitem [ref=e630]:
+      - text: Site Information
+      - list [ref=e631]:
+        - listitem [ref=e632]: LicenseKey (read-only) (not used in Trial version)
+        - listitem [ref=e633]: SiteName
+        - listitem [ref=e634]: SiteDescription
+        - listitem [ref=e635]: SitePassword
+        - listitem [ref=e636]: SiteNews
+        - listitem [ref=e637]: SiteNewsShow
+        - listitem [ref=e638]: SiteNewsFAQ
+        - listitem [ref=e639]: SiteEmail
+        - listitem [ref=e640]: WebSite
+        - listitem [ref=e641]: DirListing
+        - listitem [ref=e642]: InternetURL
+        - listitem [ref=e643]: AppendPort
+        - listitem [ref=e644]: AutoLookup
+    - listitem [ref=e645]:
+      - text: Manager Settings (all read-only)
+      - list [ref=e646]:
+        - listitem [ref=e647]: AdminHash
+        - listitem [ref=e648]: AdminPath
+        - listitem [ref=e649]: AdminTimeout
+        - listitem [ref=e650]: AdminWhitelist
+        - listitem [ref=e651]: HTTPPort
+        - listitem [ref=e652]: WSPort
+        - listitem [ref=e653]: SSL
+        - listitem [ref=e654]: SSLKey
+        - listitem [ref=e655]: SSLPassword
+        - listitem [ref=e656]: SSLCert
+        - listitem [ref=e657]: SSLRoot
+        - listitem [ref=e658]: SSLRedirect
+        - listitem [ref=e659]: HTTPSPort
+        - listitem [ref=e660]: WSSPort
+        - listitem [ref=e661]: LocalIP
+    - listitem [ref=e662]:
+      - text: Server Settings
+      - list [ref=e663]:
+        - listitem [ref=e664]: MaxSessions
+        - listitem [ref=e665]: MaxIdleMinutes
+        - listitem [ref=e666]: MaxDisconMinutes
+        - listitem [ref=e667]: AllowDupeIPs
+        - listitem [ref=e668]: DupeIPWhitelist
+        - listitem [ref=e669]: AllowDupePCs
+        - listitem [ref=e670]: AutoStart
+        - listitem [ref=e671]: LoginChime
+        - listitem [ref=e672]: KeepAlive
+        - listitem [ref=e673]: ConnectionSweep
+        - listitem [ref=e674]: MaxHTTPConnections
+        - listitem [ref=e675]: MaxHTTPSConnections
+        - listitem [ref=e676]: MaxWSConnectionsIP
+        - listitem [ref=e677]: MaxWSSConnectionsIP
+        - listitem [ref=e678]: MaxWhitelist
+        - listitem [ref=e679]: BadPasswordMax
+        - listitem [ref=e680]: ProxyIPHeader
+        - listitem [ref=e681]: ProxyWSS
+        - listitem [ref=e682]: SameOriginPolicy
+    - listitem [ref=e683]:
+      - text: API Settings
+      - list [ref=e684]:
+        - listitem [ref=e685]: EnableAPI
+        - listitem [ref=e686]: APIHash (write-only password, hashed automatically)
+        - listitem [ref=e687]: APIWhitelist
+        - listitem [ref=e688]: APIPath (read-only)
+    - listitem [ref=e689]:
+      - text: Chip Settings
+      - list [ref=e690]:
+        - listitem [ref=e691]: FormatPrimary
+        - listitem [ref=e692]: BalanceStarting
+        - listitem [ref=e693]: BalanceNegative
+        - listitem [ref=e694]: AllowBalanceResets
+        - listitem [ref=e695]: BalanceReset
+        - listitem [ref=e696]: AllowTransfers
+        - listitem [ref=e697]: SecondaryCurrency
+        - listitem [ref=e698]: FormatSecondary
+        - listitem [ref=e699]: BalanceStarting2
+        - listitem [ref=e700]: BalanceNegative2
+        - listitem [ref=e701]: AllowBalanceResets2
+        - listitem [ref=e702]: BalanceReset2
+        - listitem [ref=e703]: AllowTransfers2
+    - listitem [ref=e704]:
+      - text: Account Settings
+      - list [ref=e705]:
+        - listitem [ref=e706]: RequireSessionKeys
+        - listitem [ref=e707]: PlayerNameMin
+        - listitem [ref=e708]: AllowUnicodeNames
+        - listitem [ref=e709]: AllowNewAccounts
+        - listitem [ref=e710]: AllowAccountChanges
+        - listitem [ref=e711]: AllowPasswordRecovery
+        - listitem [ref=e712]: ValidateEmails
+        - listitem [ref=e713]: AllowDupeEmails
+        - listitem [ref=e714]: CrashRecovery
+        - listitem [ref=e715]: RealNameEnable
+        - listitem [ref=e716]: LocationEnable
+        - listitem [ref=e717]: GenderEnable
+        - listitem [ref=e718]: CustomField1
+        - listitem [ref=e719]: CustomField2
+        - listitem [ref=e720]: CustomField3
+        - listitem [ref=e721]: CustomField4
+        - listitem [ref=e722]: CustomField5
+        - listitem [ref=e723]: AllowDupeTickets
+        - listitem [ref=e724]: AllowSuspend
+    - listitem [ref=e725]:
+      - text: Client Settings
+      - list [ref=e726]:
+        - listitem [ref=e727]: Language1
+        - listitem [ref=e728]: Language2
+        - listitem [ref=e729]: Language3
+        - listitem [ref=e730]: Language4
+        - listitem [ref=e731]: Language5
+        - listitem [ref=e732]: ClientRemoveAbout (Gold feature)
+        - listitem [ref=e733]: SitAndGoTab (read-only)
+        - listitem [ref=e734]: LogoutLink (Gold feature)
+        - listitem [ref=e735]: ChatTitle
+        - listitem [ref=e736]: TableChat
+        - listitem [ref=e737]: LobbyChat
+        - listitem [ref=e738]: LobbyChatPermission
+        - listitem [ref=e739]: ChatFilter
+        - listitem [ref=e740]: ChatEmoticons
+        - listitem [ref=e741]: ChatFloodMax
+        - listitem [ref=e742]: ChatFloodPeriod
+        - listitem [ref=e743]: ChatFloodPenalty
+        - listitem [ref=e744]: InviteSeconds
+        - listitem [ref=e745]: TourneyStartSeconds
+        - listitem [ref=e746]: AllInPause
+        - listitem [ref=e747]: ShowdownSeconds
+        - listitem [ref=e748]: RebuySeconds
+        - listitem [ref=e749]: RunTwiceIcon
+        - listitem [ref=e750]: RunTwiceSeconds
+        - listitem [ref=e751]: ChopSeconds
+        - listitem [ref=e752]: HandHighlight
+        - listitem [ref=e753]: AllowLurkers
+        - listitem [ref=e754]: PlayerProfileURL
+        - listitem [ref=e755]: PlayerAccountURL
+        - listitem [ref=e756]: AutoCheck
+        - listitem [ref=e757]: ClientRealNames
+        - listitem [ref=e758]: ClientGender
+        - listitem [ref=e759]: ClientCustom1
+        - listitem [ref=e760]: ClientNetChips
+        - listitem [ref=e761]: StrictLimitCap
+        - listitem [ref=e762]: TicketsMenu
+        - listitem [ref=e763]: PermissionsMenu
+    - listitem [ref=e764]:
+      - text: Client Media
+      - list [ref=e765]:
+        - listitem [ref=e766]: FontFamily
+        - listitem [ref=e767]: FontFamily1
+        - listitem [ref=e768]: FontFamily2
+        - listitem [ref=e769]: FontFamily3
+        - listitem [ref=e770]: FontFamily4
+        - listitem [ref=e771]: FontFamily5
+        - listitem [ref=e772]: FontSizeSmall
+        - listitem [ref=e773]: FontSizeNormal
+        - listitem [ref=e774]: FontSizeLarge
+        - listitem [ref=e775]: ButtonRadius
+        - listitem [ref=e776]: MobileIcon (read-only)
+        - listitem [ref=e777]: LoaderGraphic (read-only)
+        - listitem [ref=e778]: AvatarGraphic (read-only) (Pro/Gold feature)
+        - listitem [ref=e779]: AvatarCount (read-only) (Pro/Gold feature)
+        - listitem [ref=e780]: BGLogoFile (read-only) (Gold feature)
+        - listitem [ref=e781]: BGLogoTile (Gold feature)
+        - listitem [ref=e782]: BGLogoLink (Gold feature)
+        - listitem [ref=e783]: CardGraphic1 (read-only) (Pro/Gold feature)
+        - listitem [ref=e784]: CardGraphic2 (read-only) (Pro/Gold feature)
+        - listitem [ref=e785]: CardGraphic3 (read-only) (Pro/Gold feature)
+        - listitem [ref=e786]: CardGraphic4 (read-only) (Pro/Gold feature)
+        - listitem [ref=e787]: ChipGraphic (read-only) (Pro/Gold feature)
+        - listitem [ref=e788]: TableGraphic (read-only) (Pro/Gold feature)
+        - listitem [ref=e789]: TableGraphicFinal (read-only) (Pro/Gold feature)
+        - listitem [ref=e790]: TableChatGraphic (read-only) (Pro/Gold feature)
+        - listitem [ref=e791]: SeatEmptyOpacity (Pro/Gold feature)
+        - listitem [ref=e792]: SeatOpacity (Pro/Gold feature)
+        - listitem [ref=e793]: ClientGradients
+        - listitem [ref=e794]: TableBannerOffset
+        - listitem [ref=e795]: TableTextColorOn
+        - listitem [ref=e796]: TableTextColorOff
+        - listitem [ref=e797]: ClientColorBackground
+        - listitem [ref=e798]: ClientColorWindow
+        - listitem [ref=e799]: ClientColorWindowText
+        - listitem [ref=e800]: ClientColorButton
+        - listitem [ref=e801]: ClientColorButtonBorder
+        - listitem [ref=e802]: ClientColorButtonText
+        - listitem [ref=e803]: ClientColorButtonDisabled
+        - listitem [ref=e804]: ClientColorList
+        - listitem [ref=e805]: ClientColorListText
+        - listitem [ref=e806]: ClientColorListDisabled
+        - listitem [ref=e807]: ChatColorAdmin
+        - listitem [ref=e808]: ChatColorSystem
+        - listitem [ref=e809]: ChatColorDealer
+        - listitem [ref=e810]: ChatColorPlayer
+        - listitem [ref=e811]: ChatColorObserver
+    - listitem [ref=e812]:
+      - text: Player Settings
+      - list [ref=e813]:
+        - listitem [ref=e814]: PSDecimalUSA
+        - listitem [ref=e815]: PSLobbyChatTime
+        - listitem [ref=e816]: PSTableChatTime
+        - listitem [ref=e817]: PSChatBlockAsterisk
+        - listitem [ref=e818]: PSTimeFormat12
+        - listitem [ref=e819]: PSBringToFront
+        - listitem [ref=e820]: PSHandHelper
+        - listitem [ref=e821]: PSAutoMuck
+        - listitem [ref=e822]: PSCardDeck
+        - listitem [ref=e823]: PSDealFaceDown
+        - listitem [ref=e824]: PSMuteDealer
+        - listitem [ref=e825]: PSRules6Holdem
+        - listitem [ref=e826]: PSPreFlopButton1
+        - listitem [ref=e827]: PSPreFlopButton2
+        - listitem [ref=e828]: PSPreFlopButton3
+        - listitem [ref=e829]: PSPreFlopButton4
+        - listitem [ref=e830]: PSPostFlopButton1
+        - listitem [ref=e831]: PSPostFlopButton2
+        - listitem [ref=e832]: PSPostFlopButton3
+        - listitem [ref=e833]: PSPostFlopButton4
+    - listitem [ref=e834]:
+      - text: SMTP Server
+      - list [ref=e835]:
+        - listitem [ref=e836]: SMTPHost
+        - listitem [ref=e837]: SMTPPort
+        - listitem [ref=e838]: SMTPUserName
+        - listitem [ref=e839]: SMTPPassword
+        - listitem [ref=e840]: SMTPFrom
+        - listitem [ref=e841]: SMTPSecure
+    - listitem [ref=e842]:
+      - text: Database Settings
+      - list [ref=e843]:
+        - listitem [ref=e844]: DBTransLog
+        - listitem [ref=e845]: DBTransDays
+    - listitem [ref=e846]:
+      - text: Log Settings
+      - list [ref=e847]:
+        - listitem [ref=e848]: LogSave
+        - listitem [ref=e849]: LogDays
+        - listitem [ref=e850]: LogErrorDupes
+        - listitem [ref=e851]: LogMaxItems
+        - listitem [ref=e852]: LogFile
+        - listitem [ref=e853]: LogResource
+        - listitem [ref=e854]: LogSystem
+        - listitem [ref=e855]: LogConnect
+        - listitem [ref=e856]: LogRogue
+        - listitem [ref=e857]: LogLogin
+        - listitem [ref=e858]: LogLogout
+        - listitem [ref=e859]: LogAccount
+        - listitem [ref=e860]: LogHouse
+        - listitem [ref=e861]: LogTable
+        - listitem [ref=e862]: LogListing
+        - listitem [ref=e863]: LogAdmin
+        - listitem [ref=e864]: LogAPI (read-only)
+        - listitem [ref=e865]: LogAPIExempt (read-only)
+        - listitem [ref=e866]: HistorySave
+        - listitem [ref=e867]: HistoryChat
+        - listitem [ref=e868]: HistoryDays
+        - listitem [ref=e869]: TourneySave
+        - listitem [ref=e870]: TourneyDays
+        - listitem [ref=e871]: LobbyChatSave
+        - listitem [ref=e872]: LobbyChatDays
+        - listitem [ref=e873]: LogAdminChat
+        - listitem [ref=e874]: TrafficInterval
+    - listitem [ref=e875]:
+      - text: Web Settings (Pro/Gold feature)
+      - list [ref=e876]:
+        - listitem [ref=e877]: WebMinWidth
+        - listitem [ref=e878]: WebMinHeight
+        - listitem [ref=e879]: WebHeadHTML
+        - listitem [ref=e880]: WebTopHTML
+        - listitem [ref=e881]: WebTopSize
+        - listitem [ref=e882]: WebBottomHTML
+        - listitem [ref=e883]: WebBottomSize
+        - listitem [ref=e884]: WebLeftHTML
+        - listitem [ref=e885]: WebLeftSize
+        - listitem [ref=e886]: WebRightHTML
+        - listitem [ref=e887]: WebRightSize
+    - listitem [ref=e888]: Callback Events
+    - list [ref=e889]:
+      - listitem [ref=e890]: CallbackEnable
+      - listitem [ref=e891]: CallbackURL
+      - listitem [ref=e892]: CallbackPassword
+      - listitem [ref=e893]: CallbackFileSave
+      - listitem [ref=e894]: CallbackFileDays
+      - listitem [ref=e895]: CallbackTimer
+      - listitem [ref=e896]: CallbackNewAccount
+      - listitem [ref=e897]: CallbackBalance
+      - listitem [ref=e898]: CallbackBalance2
+      - listitem [ref=e899]: CallbackLogin
+      - listitem [ref=e900]: CallbackLogout
+      - listitem [ref=e901]: CallbackRingGameJoin
+      - listitem [ref=e902]: CallbackRingGameLeave
+      - listitem [ref=e903]: CallbackRingGameStart
+      - listitem [ref=e904]: CallbackRingGameStop
+      - listitem [ref=e905]: CallbackRingGameWait
+      - listitem [ref=e906]: CallbackRingGameError
+      - listitem [ref=e907]: CallbackTourneyRegister
+      - listitem [ref=e908]: CallbackTourneyUnregister
+      - listitem [ref=e909]: CallbackTourneyStart
+      - listitem [ref=e910]: CallbackTourneyCancel
+      - listitem [ref=e911]: CallbackTourneyFinish
+      - listitem [ref=e912]: CallbackTourneyTimer
+      - listitem [ref=e913]: CallbackTourneyKnockout
+      - listitem [ref=e914]: CallbackTourneyError
+      - listitem [ref=e915]: CallbackHand
+      - listitem [ref=e916]: CallbackLobbyChat
+      - listitem [ref=e917]: CallbackLobbyChatRegEx
+  - paragraph [ref=e918]: SystemLobbyMessage - sends a message to the Lobby chat box. Put the text of the message in the Message parameter (required). Specify an optional Player parameter to send the message from a specific player account (which must exist but does not need to be logged in) or leave blank to send the message from the Administrator.
+  - paragraph [ref=e919]: SystemReboot - reboots the computer immediately. This command does not attempt an orderly shutdown of active tables.
+  - paragraph [ref=e920]: SystemSet - sets the Value of the specified system Property (both parameters required). For example, to turn off the login chime, set the Property parameter to "LoginChime" and the Value parameter to "No". See the SystemGet command above for a list of all available system property names. Properties marked as "read-only" cannot be changed while the game server is online.
+  - paragraph [ref=e921]: "SystemStats - returns the following parameters related to the current server statistics:"
+  - list [ref=e922]:
+    - listitem [ref=e923]: Logins - the number of players logged in
+    - listitem [ref=e924]: FilledSeats - the number of seats currently filled
+    - listitem [ref=e925]: RunningRing - the number of running ring tables
+    - listitem [ref=e926]: RunningTrny - the number of running tournaments
+    - listitem [ref=e927]: Memory - amount of memory (in kilobytes) used by the poker server module
+    - listitem [ref=e928]: Threads - current number of threads used by the poker server module
+    - listitem [ref=e929]: CPU - the percentage of CPU time used by the poker server module
+    - listitem [ref=e930]: UpSeconds - the number of seconds since the game server was put online
+    - listitem [ref=e931]: UpTime - a string in the format of "x days x hrs x mins" indicating how long the game server has been running
+    - listitem [ref=e932]: LocalTime - a string in the format of "yyyy-mm-dd hh:mm:ss" showing the server's local time
+    - listitem [ref=e933]: UTCTime - a string in the format of "yyyy-mm-dd hh:mm:ss" showing the server's local time, converted to UTC
+    - listitem [ref=e934]: DiskFree - the number of free bytes available on the drive where the data folder is located
+    - listitem [ref=e935]: Version - server version number
+    - listitem [ref=e936]: License - Trial, Lite, Pro, or Gold
+  - heading "♣ Tournament Commands" [level=4] [ref=e937]
+  - paragraph [ref=e938]: "TournamentsAdd - adds a new tournament to the system. The newly created game will be in an offline state. Name is the only required parameter. Other parameters not specified will receive default values:"
+  - list [ref=e939]:
+    - listitem [ref=e940]: Name - a unique name, from 1 to 40 characters
+    - listitem [ref=e941]: Creator - name of admin that create game
+    - listitem [ref=e942]: Description - optional tournament description, up to 500 characters
+    - listitem [ref=e943]: Auto - set to "Yes" or "No" to put game online when server is started
+    - listitem [ref=e944]: Game - specify "Limit Hold'em", "Pot Limit Hold'em", "No Limit Hold'em", "Pot Limit 6+Hold'em", "No Limit 6+Hold'em", "Limit Omaha", "Pot Limit Omaha", "No Limit Omaha", "Limit Omaha Hi-Lo", "Pot Limit Omaha Hi-Lo", "No Limit Omaha Hi-Lo", "Limit Omaha-5", "Pot Limit Omaha-5", "No Limit Omaha-5", "Limit Omaha-5 Hi-Lo", "Pot Limit Omaha-5 Hi-Lo", "No Limit Omaha-5 Hi-Lo", "Limit Omaha-6", "Pot Limit Omaha-6", "No Limit Omaha-6", "Limit Omaha-6 Hi-Lo", "Pot Limit Omaha-6 Hi-Lo", "No Limit Omaha-6 Hi-Lo", "Limit Courchevel", "Pot Limit Courchevel", "No Limit Courchevel", "Limit Courchevel Hi-Lo", "Pot Limit Courchevel Hi-Lo", "No Limit Courchevel Hi-Lo", "Limit Razz", "Limit Stud", "Limit Stud Hi-Lo", "Mixed"
+    - listitem [ref=e945]: MixedList - if Game is set to "Mixed" then this field must contain a comma-separated list of two or more game types
+    - listitem [ref=e946]: Shootout - set to "Yes" for a shootout format or "No" for a standard format
+    - listitem [ref=e947]: PW - (optional) specify a password needed to register
+    - listitem [ref=e948]: Private - set to "Yes" to prevent observing without the password or "No" to allow observers
+    - listitem [ref=e949]: PermRegister - register permission token, 15 alphanumeric characters max
+    - listitem [ref=e950]: PermUnregister - unregister permission token, 15 alphanumeric characters max
+    - listitem [ref=e951]: PermObserve - observe permission token, 15 alphanumeric characters max
+    - listitem [ref=e952]: PermPlayerChat - player chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e953]: PermObserverChat - observer chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e954]: SuspendChatAllIn - either "Yes" or "No"
+    - listitem [ref=e955]: Seats - number of seats per table, from 2 to 10
+    - listitem [ref=e956]: MaxEntrants - multiple of seat count, 2 to 1000
+    - listitem [ref=e957]: StartFull - either "Yes" or "No"
+    - listitem [ref=e958]: StartOnDemand - either "Yes" or "No"
+    - listitem [ref=e959]: StartMin - number from 0 to 10
+    - listitem [ref=e960]: StartCode - number from 0 (disabled) to 999999
+    - listitem [ref=e961]: StartTime - yyyy-mm-dd hh:mm format (0000-00-00 00:00 = disabled)
+    - listitem [ref=e962]: RegMinutes - number of minutes, 0 to 999999
+    - listitem [ref=e963]: LateRegMinutes - number of minutes, 0 to 999999
+    - listitem [ref=e964]: LatePenalty - late registration chip penalty
+    - listitem [ref=e965]: MinPlayers - number from 2 to 1000
+    - listitem [ref=e966]: RecurMinutes - number from 0 to 999999
+    - listitem [ref=e967]: ResetSeconds - number from 10 to 999999
+    - listitem [ref=e968]: MaxRuns - number from 0 to 999999
+    - listitem [ref=e969]: NoShowMinutes - number from 0 to 999999
+    - listitem [ref=e970]: PrimaryCurrency - Yes for primary currency, No for secondary currency
+    - listitem [ref=e971]: BuyIn - number of chips
+    - listitem [ref=e972]: Bounty - number of chips
+    - listitem [ref=e973]: PKOBounty - "Yes" or "No"
+    - listitem [ref=e974]: EntryFee - number of chips
+    - listitem [ref=e975]: Ticket - ticket token
+    - listitem [ref=e976]: TicketRequired - "Yes" or "No"
+    - listitem [ref=e977]: TicketFunded - "Yes" or "No"
+    - listitem [ref=e978]: PrizeBonus - number of chips
+    - listitem [ref=e979]: MultiplyBonus - set to "Yes", "No", or "Min"
+    - listitem [ref=e980]: Chips - number of starting chips, from 10 to 25000
+    - listitem [ref=e981]: BonusTicket - bonus ticket prefix
+    - listitem [ref=e982]: AddOnChips - number of add-on chips, from 0 to 50000
+    - listitem [ref=e983]: TurnClock - number of seconds, from 10 to 120
+    - listitem [ref=e984]: TurnWarning - number of seconds, from 5 to 119
+    - listitem [ref=e985]: TimeBank - number of seconds, from 0 to 600
+    - listitem [ref=e986]: BankSync - "Yes" or "No"
+    - listitem [ref=e987]: BankReset - number of hands, from 0 to 999999
+    - listitem [ref=e988]: DisconBank - 0 to 180 seconds
+    - listitem [ref=e989]: Level - level minutes, from 1 to 1000
+    - listitem [ref=e990]: RebuyLevels - number of levels in rebuy period, 0 to 1000
+    - listitem [ref=e991]: Threshold - max chips allowed before rebuy, 0 to 999999
+    - listitem [ref=e992]: MaxRebuys - maximum rebuys allowed (-1 = unlimited)
+    - listitem [ref=e993]: RebuyCost - number of chips
+    - listitem [ref=e994]: RebuyFee - number of chips
+    - listitem [ref=e995]: MaxReentries - max re-entries allowed per player (0 to 100)
+    - listitem [ref=e996]: CanResign - "Yes" or "No"
+    - listitem [ref=e997]: BreakTime - number of minutes per rest break, 0 to 60
+    - listitem [ref=e998]: BreakInterval - 1 to 1000 (or 0 to 59 if BreakSync = Yes)
+    - listitem [ref=e999]: BreakSync - Yes (minutes past hour) or No (levels between breaks)
+    - listitem [ref=e1000]: AutoChop - "No", "Equal", or "50/50"
+    - listitem [ref=e1001]: PlayerChop - "Yes" or "No" (v7.00 to v7.12)
+    - listitem [ref=e1002]: PlayerChopMax - 0 or 2 to 10 (v7.13+)
+    - listitem [ref=e1003]: BringInPercent - number 1 to 99
+    - listitem [ref=e1004]: Blinds - blind schedule in the format of "SB1/BB1/Ante1, SB2/BB2/Ante2", etc. Leave blank for the default schedule
+    - listitem [ref=e1005]: Payout - payout structure in the format of "2-4, 100.00|5-7, 65.00, 35.00|8-10, 50.00, 30.00, 20.00". Leave blank for the default structure
+    - listitem [ref=e1006]: PayoutFractions - Yes (default) or No
+    - listitem [ref=e1007]: PayoutTickets - optional comma-separated list of ticket tokens
+    - listitem [ref=e1008]: UnregLogout - "Yes" or "No", indicates if player should be unregistered if they log out
+    - listitem [ref=e1009]: TableGraphic - path to local image file
+    - listitem [ref=e1010]: TableGraphicFinal - path to local image file
+    - listitem [ref=e1011]: "TableColorOn - #rrggbb format or leave blank for default"
+    - listitem [ref=e1012]: "TableColorOff - #rrggbb format or leave blank for default"
+    - listitem [ref=e1013]: Note - up to 500 characters
+  - paragraph [ref=e1014]: TournamentsDelete - deletes the tournament specified by the Name parameter (required). The game must already be in an offline state before it can be deleted.
+  - paragraph [ref=e1015]: TournamentsEdit - edits one or more properties of an offline tournament specified by the Name parameter (required). Fields not specified will retain their current value.
+  - list [ref=e1016]:
+    - listitem [ref=e1017]: NewName - use this parameter to change the name of the tournament
+    - listitem [ref=e1018]: Creator - name of admin that create game
+    - listitem [ref=e1019]: Description - optional tournament description, up to 500 characters
+    - listitem [ref=e1020]: Auto - set to "Yes" or "No" to put game online when server is started
+    - listitem [ref=e1021]: Game - specify "Limit Hold'em", "Pot Limit Hold'em", "No Limit Hold'em", "Pot Limit 6+Hold'em", "No Limit 6+Hold'em", "Limit Omaha", "Pot Limit Omaha", "No Limit Omaha", "Limit Omaha Hi-Lo", "Pot Limit Omaha Hi-Lo", "No Limit Omaha Hi-Lo", "Limit Omaha-5", "Pot Limit Omaha-5", "No Limit Omaha-5", "Limit Omaha-5 Hi-Lo", "Pot Limit Omaha-5 Hi-Lo", "No Limit Omaha-5 Hi-Lo", "Limit Omaha-6", "Pot Limit Omaha-6", "No Limit Omaha-6", "Limit Omaha-6 Hi-Lo", "Pot Limit Omaha-6 Hi-Lo", "No Limit Omaha-6 Hi-Lo", "Limit Courchevel", "Pot Limit Courchevel", "No Limit Courchevel", "Limit Courchevel Hi-Lo", "Pot Limit Courchevel Hi-Lo", "No Limit Courchevel Hi-Lo", "Limit Razz", "Limit Stud", "Limit Stud Hi-Lo", "Mixed"
+    - listitem [ref=e1022]: MixedList - if Game is set to "Mixed" then this field must contain a comma-separated list of two or more game types
+    - listitem [ref=e1023]: Shootout - set to "Yes" for a shootout format or "No" for a standard format
+    - listitem [ref=e1024]: PW - (optional) specify a password needed to register
+    - listitem [ref=e1025]: Private - set to "Yes" to prevent observing without the password or "No" to allow observers
+    - listitem [ref=e1026]: PermRegister - register permission token, 15 alphanumeric characters max
+    - listitem [ref=e1027]: PermUnregister - unregister permission token, 15 alphanumeric characters max
+    - listitem [ref=e1028]: PermObserve - observe permission token, 15 alphanumeric characters max
+    - listitem [ref=e1029]: PermPlayerChat - player chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e1030]: PermObserverChat - observer chat permission token, 15 alphanumeric characters max
+    - listitem [ref=e1031]: SuspendChatAllIn - either "Yes" or "No"
+    - listitem [ref=e1032]: Seats - number of seats per table, from 2 to 10
+    - listitem [ref=e1033]: MaxEntrants - multiple of seat count, 2 to 1000
+    - listitem [ref=e1034]: StartFull - either "Yes" or "No"
+    - listitem [ref=e1035]: StartOnDemand - either "Yes" or "No"
+    - listitem [ref=e1036]: StartMin - number from 0 to 10
+    - listitem [ref=e1037]: StartCode - number from 0 (disabled) to 999999
+    - listitem [ref=e1038]: StartTime - yyyy-mm-dd hh:mm format (0000-00-00 00:00 = disabled)
+    - listitem [ref=e1039]: RegMinutes - number of minutes, 0 to 999999
+    - listitem [ref=e1040]: LateRegMinutes - number of minutes, 0 to 999999
+    - listitem [ref=e1041]: LatePenalty - late registration chip penalty
+    - listitem [ref=e1042]: MinPlayers - number from 2 to 1000
+    - listitem [ref=e1043]: RecurMinutes - number from 0 to 999999
+    - listitem [ref=e1044]: ResetSeconds - number from 10 to 999999
+    - listitem [ref=e1045]: MaxRuns - number from 0 to 999999
+    - listitem [ref=e1046]: NoShowMinutes - number from 0 to 999999
+    - listitem [ref=e1047]: PrimaryCurrency - Yes for primary currency, No for secondary currency
+    - listitem [ref=e1048]: BuyIn - number of chips
+    - listitem [ref=e1049]: Bounty - number of chips
+    - listitem [ref=e1050]: PKOBounty - "Yes" or "No"
+    - listitem [ref=e1051]: EntryFee - number of chips
+    - listitem [ref=e1052]: Ticket - ticket token
+    - listitem [ref=e1053]: TicketRequired - "Yes" or "No"
+    - listitem [ref=e1054]: TicketFunded - "Yes" or "No"
+    - listitem [ref=e1055]: PrizeBonus - number of chips
+    - listitem [ref=e1056]: MultiplyBonus - set to "Yes", "No", or "Min"
+    - listitem [ref=e1057]: Chips - number of starting chips, from 10 to 25000
+    - listitem [ref=e1058]: BonusTicket - bonus ticket prefix
+    - listitem [ref=e1059]: AddOnChips - number of add-on chips, from 0 to 50000
+    - listitem [ref=e1060]: TurnClock - number of seconds, from 10 to 120
+    - listitem [ref=e1061]: TurnWarning - number of seconds, from 5 to 119
+    - listitem [ref=e1062]: TimeBank - number of seconds, from 0 to 600
+    - listitem [ref=e1063]: BankSync - "Yes" or "No"
+    - listitem [ref=e1064]: BankReset - number of hands, from 0 to 999999
+    - listitem [ref=e1065]: DisconBank - 0 to 180 seconds
+    - listitem [ref=e1066]: Level - level minutes, from 1 to 1000
+    - listitem [ref=e1067]: RebuyLevels - number of levels in rebuy period, 0 to 1000
+    - listitem [ref=e1068]: Threshold - max chips allowed before rebuy, 0 to 999999
+    - listitem [ref=e1069]: MaxRebuys - maximum rebuys allowed (-1 = unlimited)
+    - listitem [ref=e1070]: RebuyCost - number of chips
+    - listitem [ref=e1071]: RebuyFee - number of chips
+    - listitem [ref=e1072]: MaxReentries - max re-entries allowed per player (0 to 100)
+    - listitem [ref=e1073]: CanResign - "Yes" or "No"
+    - listitem [ref=e1074]: BreakTime - number of minutes per rest break, 0 to 60
+    - listitem [ref=e1075]: BreakInterval - 1 to 1000 (or 0 to 59 if BreakSync = Yes)
+    - listitem [ref=e1076]: BreakSync - Yes (minutes past hour) or No (levels between breaks)
+    - listitem [ref=e1077]: AutoChop - "No", "Equal", or "50/50"
+    - listitem [ref=e1078]: PlayerChop - "Yes" or "No" (v7.00 to v7.12)
+    - listitem [ref=e1079]: PlayerChopMax - 0 or 2 to 10 (v7.13+)
+    - listitem [ref=e1080]: BringInPercent - number 1 to 99
+    - listitem [ref=e1081]: Blinds - blind schedule in the format of "SB1/BB1/Ante1, SB2/BB2/Ante2", etc. Leave blank for the default schedule
+    - listitem [ref=e1082]: Payout - payout structure in the format of "2-4, 100.00|5-7, 65.00, 35.00|8-10, 50.00, 30.00, 20.00". Leave blank for the default structure
+    - listitem [ref=e1083]: PayoutFractions - Yes (default) or No
+    - listitem [ref=e1084]: PayoutTickets - optional comma-separated list of ticket tokens
+    - listitem [ref=e1085]: UnregLogout - "Yes" or "No", indicates if player should be unregistered if they log out
+    - listitem [ref=e1086]: TableGraphic - path to local image file
+    - listitem [ref=e1087]: TableGraphicFinal - path to local image file
+    - listitem [ref=e1088]: "TableColorOn - #rrggbb format or leave blank for default"
+    - listitem [ref=e1089]: "TableColorOff - #rrggbb format or leave blank for default"
+    - listitem [ref=e1090]: Note - up to 500 characters
+  - paragraph [ref=e1091]: "TournamentsGet - retrieve the settings for the tournament specified by the Name parameter (required). A sample response will look something like this (JSON format):"
+  - generic [ref=e1092]: "{\"Result\":\"Ok\", \"Name\":\"Tournament #1\", \"Status\":\"Playing: 6 of 9\", \"Creator\":\"Administrator\", \"Description\":\"\", \"Auto\":\"Yes\", \"Game\":\"No Limit Hold'em\", \"MixedList\":\"\", \"Shootout\":\"No\", \"PW\":\"\", \"Private\":\"No\", \"PermRegister\":\"\", \"PermUnregister\":\"\", \"PermObserve\":\"\", \"PermPlayerChat\":\"\", \"PermObserverChat\":\"\", \"SuspendChatAllIn\":\"No\", \"Seats\":9, \"MaxEntrants\":99, \"StartFull\":\"Yes\", \"StartOnDemand\":\"No\", \"StartMin\":1, \"StartCode\":0, \"StartTime\":\"0000-00-00 00:00\", \"RegMinutes\":0, \"LateRegMinutes\":0, \"LatePenalty\":0, \"MinPlayers\":2, \"RecurMinutes\":0, \"ResetSeconds\":30, \"MaxRuns\":0, \"NoShowMinutes\":0, \"PrimaryCurrency\":\"Yes\", \"BuyIn\":1500, \"Bounty\":0, \"PKOBounty\":\"No\", \"EntryFee\":0, \"Ticket\":\"\", \"TicketRequired\":\"No\", \"TicketFunded\":\"No\", \"PrizeBonus\":0, \"MultiplyBonus\":\"No\", \"Chips\":1500, \"BonusTicket\":\"\", \"AddOnChips\":0, \"TurnClock\":30, \"TurnWarning\":10, \"TimeBank\":60, \"BankSync\":\"Yes\", \"BankReset\":0, \"DisconBank\":60, \"Level\":10, \"RebuyLevels\":0, \"Threshold\":1500, \"MaxRebuys\":0, \"RebuyCost\":0, \"RebuyFee\":0, \"MaxReentries\":0, \"CanResign\":\"No\", \"BreakTime\":0, \"BreakInterval\":60, \"BreakSync\":\"No\", \"AutoChop\":\"No\", \"PlayerChopMax\":0, \"BringInPercent\":30, \"Blinds\":\"10/20/0, 15/30/0, 25/50/0, 50/100/0, 75/150/0, 100/200/0, 100/200/25, 200/400/25, 300/600/50, 400/800/50, 600/1200/75, 800/1600/75, 1000/2000/100, 1500/3000/150, 2000/4000/200, 3000/6000/300, 4000/8000/400\", \"Payout\":\"2-4, 100.00|5-7, 65.00, 35.00|8-10, 50.00, 30.00, 20.00\", \"PayoutFractions\":\"Yes\", \"PayoutTickets\":\"\", \"UnregLogout\":\"No\", \"TableGraphic\":\"\", \"TableGraphicFinal\":\"\", \"TableColorOn\":\"\", \"TableColorOff\":\"\", \"Note\":\"\"}"
+  - paragraph [ref=e1093]: "or in legacy format:"
+  - generic [ref=e1094]: "Result=Ok Name=Tournament #1 Status=Playing: 6 of 9 Creator=Administrator Description= Auto=Yes Game=No Limit Hold'em MixedList= Shootout=No PW= Private=No PermRegister= PermUnregister= PermObserve= PermPlayerChat= PermObserverChat= SuspendChatAllIn=No Seats=9 MaxEntrants=99 StartFull=Yes StartOnDemand=No StartMin=1 StartCode=0 StartTime=0000-00-00 00:00 RegMinutes=0 LateRegMinutes=0 LatePenalty=0 MinPlayers=2 RecurMinutes=0 ResetSeconds=30 MaxRuns=0 NoShowMinutes=0 PrimaryCurrency=Yes BuyIn=1500 Bounty=0 PKOBounty=No EntryFee=0 Ticket= TicketRequired=No TicketFunded=No PrizeBonus=0 MultiplyBonus=No Chips=1500 BonusTicket= AddOnChips=0 TurnClock=30 TurnWarning=10 TimeBank=60 BankSync=Yes BankReset=0 DisconBank=60 Level=10 RebuyLevels=0 Threshold=1500 MaxRebuys=0 RebuyCost=0 RebuyFee=0 MaxReentries=0 CanResign=No BreakTime=0 BreakInterval=60 BreakSync=No AutoChop=No PlayerChopMax=0 BringInPercent=30 Blinds=10/20/0, 15/30/0, 25/50/0, 50/100/0, 75/150/0, 100/200/0, 100/200/25, 200/400/25, 300/600/50, 400/800/50, 600/1200/75, 800/1600/75, 1000/2000/100, 1500/3000/150, 2000/4000/200, 3000/6000/300, 4000/8000/400 Payout=2-4, 100.00|5-7, 65.00, 35.00|8-10, 50.00, 30.00, 20.00 PayoutFractions=Yes PayoutTickets= UnregLogout=No TableGraphic= TableGraphicFinal= TableColorOn= TableColorOff= Note="
+  - paragraph [ref=e1095]: "TournamentsList - retrieves the list of all tournaments. Calling this with no parameters will just return the number of tournaments. Set the Fields parameter to a comma separated list of field names that you want returned. Do not include spaces in the list. You may choose any combination of these fields:"
+  - paragraph [ref=e1096]: Name, Status, Creator, Description, Auto, Game, MixedList, Shootout, PW, Private, PermRegister, PermUnregister, PermObserve, PermPlayerChat, PermObserverChat, SuspendChatAllIn, Seats, MaxEntrants, StartFull, StartOnDemand, StartMin, StartCode, StartTime, RegMinutes, LateRegMinutes, LatePenalty, MinPlayers, RecurMinutes, ResetSeconds, MaxRuns, NoShowMinutes, PrimaryCurrency, BuyIn, Bounty, PKOBounty, EntryFee, Ticket, TicketRequired, TicketFunded, PrizeBonus, MultiplyBonus, Chips, BonusTicket, AddOnChips, TurnClock, TurnWarning, TimeBank, BankSync, BankReset, DisconBank, Level, RebuyLevels, Threshold, MaxRebuys, RebuyCost, RebuyFee, MaxReentries, CanResign, BreakTime, BreakInterval, BreakSync, AutoChop, PlayerChopMax, BringInPercent, Blinds, Payout, PayoutFractions, PayoutTickets, UnregLogout, TableGraphic, TableGraphicFinal, TableColorOn, TableColorOff, Note
+  - paragraph [ref=e1097]: "A sample response with \"Fields=Name,Game\" may look something like this (JSON format):"
+  - generic [ref=e1098]: "{\"Result\":\"Ok\",\"Tournaments\":3,\"Name\":[\"Tournament #1\",\"Tournament #2\",\"Tournament #3\"],\"Game\":[\"Limit Hold'em\",\"Pot Limit Hold'em\",\"No Limit Hold'em\"]}"
+  - paragraph [ref=e1099]: "or in legacy format:"
+  - generic [ref=e1100]: "Result=Ok Tournaments=3 Name1=Tournament #1 Game1=Limit Hold'em Name2=Tournament #2 Game2=Pot Limit Hold'em Name3=Tournament #3 Game3=No Limit Hold'em"
+  - paragraph [ref=e1101]: TournamentsMessage - sends an Administrator message to the chat box for all tables in the tournament specified by the Name parameter (required). Put the text of the message in the Message parameter (required). Use an asterisk (*) as the Name parameter to send the message to all tournaments.
+  - paragraph [ref=e1102]: TournamentsOffline - closes the tournament specified by the Name parameter (required) and puts it in an offline state. Set an optional Now parameter to "Yes" to close the tournament immediately. Otherwise, the tournament will close after it finishes.
+  - paragraph [ref=e1103]: TournamentsOnline - puts the tournament specified by the Name parameter (required) into an online state, making it available for play.
+  - paragraph [ref=e1104]: TournamentsOpen - opens a tournament table in the player client for the specified player (who must already be logged in). Specify the tournament by the Name parameter (required), the table number by the Table parameter (optional, defaults to 1), and the player by the Player parameter (required).
+  - paragraph [ref=e1105]: TournamentsPause - pauses a running tournament specified by the Name parameter (required). Set parameter Now to "Yes" (the default) to pause all tables immediately or to "No" to pause each table individually once the current hand completes.
+  - paragraph [ref=e1106]: "TournamentsPlaying - retrieves the list of seated and finished players for the tournament specified by the Name parameter (required). The tournament number and running time are also included. The Away field shows the number of minutes that a player has been sitting out. A sample response may look something like this (JSON format):"
+  - generic [ref=e1107]: "{\"Result\":\"Ok\",\"Number\":123456,\"Time\":\"0:32\",\"Count\":3,\"Player\":[\"Aces123\",\"BoneCrusher\",\"Dave\"],\"Table\":[1,1,0],\"Seat\":[1,4,0],\"Chips\":[\"1650\",\"1475\",\"Finished\"],\"Rebuys\":[0,0,0],\"AddOns\":[0,0,0],\"Rank\":[1,2,3],\"NoShow\":[\"No\",\"No\",\"No\"],\"Away\":[0,0,1]}"
+  - paragraph [ref=e1108]: "or in legacy format:"
+  - generic [ref=e1109]: Result=Ok Number=123456 Time=0:32 Player1=Aces123 Table1=1 Seat1=1 Chips1=1650 Rebuys1=0 AddOns1=0 Rank1=1 NoShow1=No Away1=0 Player2=BoneCrusher Table2=1 Seat2=4 Chips2=1475 Rebuys2=0 AddOns2=0 Rank2=2 NoShow2=No Away2=0 Player3=Dave Table3=0 Seat3=0 Chips3=Finished Rebuys3=0 AddOns3=0 Rank3=3 NoShow3=No Away3=1 Count=3
+  - paragraph [ref=e1110]: TournamentsRegister - registers a player specified by the Player parameter (required) for the tournament specified by the Name parameter (required) and automatically deducts the applicable buy-in from their account. The player does not have to be logged in. Use the optional Negative parameter to bypass the system "Allow negative balance" setting. Set to "Allow" to allow the player's balance to go to a negative balance if they do not have enough chips to meet the buy-in price or to "Skip" to deny the registration in that case. Leave this parameter blank to obey the system setting.
+  - paragraph [ref=e1111]: TournamentsRemoveNoShows - removes all "no-show" players (never clicked their Ready button) from a running tournament specified by the Name parameter (required). Their buyin/entry fees are removed from the prizepool and added back to their accounts. No-shows can be removed up to the point of payout distribution.
+  - paragraph [ref=e1112]: "TournamentsResults - call without any parameters to retrieve a list of dates and tournament names where a tournament results file was created. Example output will look something like this (JSON format):"
+  - generic [ref=e1113]: "{\"Result\":\"Ok\",\"Files\":2,\"Date\":[\"2015-03-01\",\"2015-03-05\"],\"Name\":[\"Tournament #2\",\"Tournament #5\"]}"
+  - paragraph [ref=e1114]: "or in legacy format:"
+  - generic [ref=e1115]: "Result=Ok Files=2 Date1=2015-03-01 Name1=Tournament #2 Date2=2015-03-05 Name2=Tournament #5"
+  - paragraph [ref=e1116]: "Call with a Date parameter in the format of yyyy-mm-dd and a Name parameter to retrieve the contents of a tournament results file. Beginning with version 5.18, use the optional Start and Count parameters to specify a range of lines to retrieve. The first line number is 0. A Start value of -1 will retrieve lines from the end of the file. A Count value of 0 will retrieve the remaining lines from the starting point. Example output will look something like this (JSON format):"
+  - generic [ref=e1117]: "{\"Results\":\"Ok\",\"Start\":0,\"Count\":36,\"Data\":[\"Tournament=Tournament #1\",\"Number=39\",\"BuyIn=1500+0\",\"PrizeBonus=0\",\"MultiplyBonus=No\",\"Entrants=2\",\"Late=0\",\"Removed=0\",\"Rebuys=0\",\"AddOns=0\",\"RebuyCost=0+0\",\"NetBonus=0\",\"StopOnChop=No\",\"Start=2015-07-12 13:41:21\",\"Place2=BoneCrusher (0)\",\"Place1=Aces123 (3000)\",\"Stop=2015-07-12 13:42:04\",\"\",\"Tournament=Tournament #1\",\"Number=40\",\"BuyIn=1500+0\",\"PrizeBonus=0\",\"MultiplyBonus=No\",\"Entrants=3\",\"Late=0\",\"Removed=0\",\"Rebuys=1\",\"AddOns=1\",\"RebuyCost=1500+0\",\"NetBonus=0\",\"StopOnChop=No\",\"Start=2015-07-12 7:11:26\",\"Place3=DeathBot (0) Rebuys:1 AddOn:Yes\",\"Place2=Aces123 (0) Rebuys:0 AddOn:No\",\"Place1=BoneCrusher (7500) Rebuys:0 AddOn:No\",\"Stop=2015-07-12 17:12:08\"]}"
+  - paragraph [ref=e1118]: "or in legacy format:"
+  - generic [ref=e1119]: "Results=Ok Start=0 Count=36 Tournament=Tournament #1 Number=39 BuyIn=1500+0 PrizeBonus=0 MultiplyBonus=No Entrants=2 Late=0 Removed=0 Rebuys=0 AddOns=0 RebuyCost=0+0 NetBonus=0 StopOnChop=No Start=2015-07-12 13:41:21 Place2=BoneCrusher (0) Place1=Aces123 (3000) Stop=2015-07-12 13:42:04 Tournament=Tournament #1 Number=40 BuyIn=1500+0 PrizeBonus=0 MultiplyBonus=No Entrants=3 Late=0 Removed=0 Rebuys=1 AddOns=1 RebuyCost=1500+0 NetBonus=0 StopOnChop=No Start=2015-07-12 17:11:26 Place3=DeathBot (0) Rebuys:1 AddOn:Yes Place2=Aces123 (0) Rebuys:0 AddOn:No Place1=BoneCrusher (7500) Rebuys:0 AddOn:No Stop=2015-07-12 17:12:08"
+  - paragraph [ref=e1120]: Beginning with version 7.09, call with a Number parameter (indicating the tournament number) to retrieve the results of a single tournament. Leave the other parameters blank when using the Number parameter. The server caches the results of the last 100 tournaments played so the specified number must still be in the cache or an error will be returned. Use the Tournament Finish callback event to get notified when a new result (and its number) is available.
+  - paragraph [ref=e1121]: TournamentsResume - resumes a paused tournament specified by the Name parameter (required).
+  - paragraph [ref=e1122]: TournamentsStart - manually starts the tournament specified by the Name parameter (required). There must be at least two players registered to start a tournament.
+  - paragraph [ref=e1123]: "TournamentsStats - retrieves basic statistics on a running tournament specified by the Name parameter (required). The tournament number and running time are also included. The Time parameter will be blank if the tournament is not currently running. A sample response may look something like this (JSON format):"
+  - generic [ref=e1124]: "{\"Result\":\"Ok\",\"Number\":1234,\"Time\":\"0:01\",\"LevelNumber\":1,\"LevelSeconds\": 600,\"Entrants\":9,\"LateRegs\":0,\"Playing\":9,\"Removed\":0,\"Rebuys\":0,\"AddOns\":0,\"Smallest\":1400,\"Average\":1500,\"Largest\":1600,\"Prizepool\":13500,\"Payouts\":3,\"Payout\":[6750,4050,2700]}"
+  - paragraph [ref=e1125]: "or in legacy format:"
+  - generic [ref=e1126]: Result=Ok Number=1234 Time=0:01 LevelNumber=1 LevelSeconds=600 Entrants=9 LateRegs=0 Playing=9 Removed=0 Rebuys=0 AddOns=0 Smallest=1400 Average=1500 Largest=1600 Prizepool=13500 Payouts=3 Payout1=6750 Payout2=4050 Payout3=2700
+  - paragraph [ref=e1127]: TournamentsUnregister - removes a player specified by the Player parameter (required) from the waiting list of a tournament specified by the Name parameter (required) and refunds their account with the applicable buy-in.
+  - paragraph [ref=e1128]: "TournamentsWaiting - retrieves the list of registered players in the waiting list for the tournament specified by the Name parameter (required). A sample response will look something like this (JSON format):"
+  - generic [ref=e1129]: "{\"Result\":\"Ok\",\"Count\":3,\"Wait\":[\"Aces123\",\"BoneCrusher\",\"Wizard\"]}"
+  - paragraph [ref=e1130]: "or in legacy format:"
+  - generic [ref=e1131]: Result=Ok Count=3 Wait1=Aces123 Wait2=BoneCrusher Wait3=Wizard
+  - paragraph
+  - 'link "Next: Startup Parameters →" [ref=e1134] [cursor=pointer]':
+    - /url: Technical_Startup.htm
+  - paragraph
+  - link "Help Index" [ref=e1135] [cursor=pointer]:
+    - /url: http://www.briggsoft.com/docs/pmavens/PMHelp.htm
+  - text: "|"
+  - link "Home Page" [ref=e1136] [cursor=pointer]:
+    - /url: http://www.briggsoft.com/pmavens.htm

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://v2-10-5.turborepo.dev/schema.json",
+  "globalDependencies": [
+    "**/.env.*local"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**"
+      ],
+      "inputs": [
+        "src/**",
+        "tsconfig.json"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "src/**"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "src/**/*.spec.ts",
+        "src/**/*.test.ts"
+      ],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "test/**",
+        "src/**"
+      ],
+      "outputs": []
+    }
+  }
+}

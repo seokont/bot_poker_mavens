@@ -1,0 +1,6 @@
+{
+  "botId": "cmrncgijj000efuj4lx0gau6b",
+  "timestamp": "2026-07-16T12:04:45.503Z",
+  "message": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/\nCall log:\n  - navigating to \"http://localhost:8080/\", waiting until \"domcontentloaded\"\n",
+  "stack": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/\nCall log:\n  - navigating to \"http://localhost:8080/\", waiting until \"domcontentloaded\"\n\n    at WorkerService.startBot (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:104:18)\n    at async WorkerService.handleJob (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:468:11)\n    at async WorkerService.processJobs (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:436:11)"
+}

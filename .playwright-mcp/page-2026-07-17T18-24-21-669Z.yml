@@ -1,0 +1,183 @@
+- generic [ref=e5]:
+  - banner [ref=e6]:
+    - generic [ref=e7]:
+      - button [ref=e8] [cursor=pointer]:
+        - generic [ref=e9]: 󰍜
+      - generic [ref=e11]: Poker Mavens Bot Platform
+      - generic [ref=e13]: Live
+      - button [ref=e15] [cursor=pointer]:
+        - generic [ref=e16]: 󰍃
+  - navigation [ref=e18]:
+    - list [ref=e20]:
+      - link "Dashboard" [ref=e21] [cursor=pointer]:
+        - /url: "#/"
+        - generic [ref=e22]: 󰕮
+      - link "Bots" [ref=e26] [cursor=pointer]:
+        - /url: "#/bots"
+        - generic [ref=e27]: 󰚩
+      - link "Tables" [ref=e31] [cursor=pointer]:
+        - /url: "#/tables"
+        - generic [ref=e32]: 󰓫
+      - link "Hands" [ref=e36] [cursor=pointer]:
+        - /url: "#/hands"
+        - generic [ref=e37]: 󰘸
+      - link "Strategies" [ref=e41] [cursor=pointer]:
+        - /url: "#/strategies"
+        - generic [ref=e42]: 󰧑
+      - link "Logs" [ref=e46] [cursor=pointer]:
+        - /url: "#/logs"
+        - generic [ref=e47]: 󰺮
+  - main [ref=e51]:
+    - generic [ref=e53]:
+      - heading "Bot Management" [level=2] [ref=e54]
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: 󰍉
+            - generic [ref=e62]:
+              - generic: Search bots...
+              - textbox "Search bots..." [ref=e63]
+          - generic [ref=e64]:
+            - button "Create Bot" [ref=e66] [cursor=pointer]:
+              - generic [ref=e67]: 󰐕
+            - button "Start All Selected" [ref=e71] [cursor=pointer]:
+              - generic [ref=e72]: 󰐊
+            - button "Stop All Selected" [ref=e76] [cursor=pointer]:
+              - generic [ref=e77]: 󰓛
+        - generic [ref=e80]:
+          - table [ref=e82]:
+            - rowgroup [ref=e83]:
+              - row [ref=e84]:
+                - columnheader [ref=e85]:
+                  - generic [ref=e88]:
+                    - generic [ref=e89]: 󰄱
+                    - checkbox [ref=e90] [cursor=pointer]
+                - columnheader "Name" [ref=e91]:
+                  - generic [ref=e92]:
+                    - generic [ref=e93]: Name
+                    - generic [ref=e94]: 󰁝
+                - columnheader "Login" [ref=e95]:
+                  - generic [ref=e96]:
+                    - generic [ref=e97]: Login
+                    - generic [ref=e98]: 󰁝
+                - columnheader "Status" [ref=e99]:
+                  - generic [ref=e100]:
+                    - generic [ref=e101]: Status
+                    - generic [ref=e102]: 󰁝
+                - columnheader "Strategy" [ref=e103]:
+                  - generic [ref=e104]:
+                    - generic [ref=e105]: Strategy
+                    - generic [ref=e106]: 󰁝
+                - columnheader "Current Table" [ref=e107]:
+                  - generic [ref=e108]:
+                    - generic [ref=e109]: Current Table
+                    - generic [ref=e110]: 󰁝
+                - columnheader "Session P/L" [ref=e111]:
+                  - generic [ref=e112]:
+                    - generic [ref=e113]: Session P/L
+                    - generic [ref=e114]: 󰁝
+                - columnheader "Hands" [ref=e115]:
+                  - generic [ref=e116]:
+                    - generic [ref=e117]: Hands
+                    - generic [ref=e118]: 󰁝
+                - columnheader "Actions" [ref=e119]
+            - rowgroup [ref=e122]:
+              - row [ref=e123] [cursor=pointer]:
+                - cell [ref=e124]:
+                  - generic [ref=e127]:
+                    - generic [ref=e128]: 󰄱
+                    - checkbox [ref=e129]
+                - cell [ref=e130]:
+                  - link "bot_3" [ref=e131]:
+                    - /url: "#"
+                - cell "bot_3" [ref=e132]
+                - cell "OFFLINE" [ref=e133]
+                - cell "cmrnmiabq0002axjquhqrjda2" [ref=e136]
+                - cell [ref=e137]
+                - cell [ref=e138]
+                - cell [ref=e139]
+                - cell [ref=e140]:
+                  - button [ref=e141]:
+                    - generic [ref=e142]: 󰈈
+                  - button [ref=e144]:
+                    - generic [ref=e145]: 󰐊
+                  - button [ref=e147]:
+                    - generic [ref=e148]: 󰓛
+                  - button [ref=e150]:
+                    - generic [ref=e151]: 󰜉
+                  - button [ref=e153]:
+                    - generic [ref=e154]: 󰆴
+              - row [ref=e156] [cursor=pointer]:
+                - cell [ref=e157]:
+                  - generic [ref=e160]:
+                    - generic [ref=e161]: 󰄱
+                    - checkbox [ref=e162]
+                - cell [ref=e163]:
+                  - link "bot_2" [ref=e164]:
+                    - /url: "#"
+                - cell "bot_2" [ref=e165]
+                - cell "IN_LOBBY" [ref=e166]
+                - cell "cmrnmiabq0002axjquhqrjda2" [ref=e169]
+                - cell [ref=e170]
+                - cell [ref=e171]
+                - cell [ref=e172]
+                - cell [ref=e173]:
+                  - button [ref=e174]:
+                    - generic [ref=e175]: 󰈈
+                  - button [ref=e177]:
+                    - generic [ref=e178]: 󰐊
+                  - button [ref=e180]:
+                    - generic [ref=e181]: 󰓛
+                  - button [ref=e183]:
+                    - generic [ref=e184]: 󰜉
+                  - button [ref=e186]:
+                    - generic [ref=e187]: 󰆴
+              - row [ref=e189] [cursor=pointer]:
+                - cell [ref=e190]:
+                  - generic [ref=e193]:
+                    - generic [ref=e194]: 󰄱
+                    - checkbox [ref=e195]
+                - cell [ref=e196]:
+                  - link "bot_1" [ref=e197]:
+                    - /url: "#"
+                - cell "bot_1" [ref=e198]
+                - cell "IN_LOBBY" [ref=e199]
+                - cell "cmrnmiabq0002axjquhqrjda2" [ref=e202]
+                - cell [ref=e203]
+                - cell [ref=e204]
+                - cell [ref=e205]
+                - cell [ref=e206]:
+                  - button [ref=e207]:
+                    - generic [ref=e208]: 󰈈
+                  - button [ref=e210]:
+                    - generic [ref=e211]: 󰐊
+                  - button [ref=e213]:
+                    - generic [ref=e214]: 󰓛
+                  - button [ref=e216]:
+                    - generic [ref=e217]: 󰜉
+                  - button [ref=e219]:
+                    - generic [ref=e220]: 󰆴
+          - separator [ref=e222]
+          - generic [ref=e223]:
+            - generic [ref=e224]:
+              - generic [ref=e225]: "Items per page:"
+              - combobox [ref=e228] [cursor=pointer]:
+                - generic [ref=e230]:
+                  - generic [ref=e231]: "20"
+                  - combobox "Items per page:": "20"
+                - generic [ref=e233]: 󰍝
+            - generic [ref=e235]: 1-3 of 3
+            - navigation "Pagination Navigation" [ref=e238]:
+              - list [ref=e239]:
+                - listitem [ref=e240]:
+                  - button "First page" [disabled]:
+                    - generic: 󰘀
+                - listitem [ref=e241]:
+                  - button "Previous page" [disabled]:
+                    - generic: 󰅁
+                - listitem [ref=e242]:
+                  - button "Next page" [disabled]:
+                    - generic: 󰅂
+                - listitem [ref=e243]:
+                  - button "Last page" [disabled]:
+                    - generic: 󰘁

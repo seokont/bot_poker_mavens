@@ -1,0 +1,835 @@
+<!DOCTYPE html><html style="width: 100%; height: 100%; overflow: hidden;"><head>
+    <title>WWW.IQpoker88.COM</title>
+    <meta charset="UTF-8">
+    <meta id="viewport" name="viewport" content="width=960">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" sizes="128x128" href="Image?Name=MobileIcon">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" sizes="128x128" href="Image?Name=MobileIcon">
+    <link rel="manifest" href="Source?Name=Manifest">
+    <link href="Source?Name=PokerMinCss&amp;Ver=7.33&amp;Crc=F162F766" rel="stylesheet" type="text/css">
+    <style type="text/css">
+      body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+      .edgepanel { display: none; position: absolute; overflow: hidden; background-color: #C9BBA1; }
+      .centerpanel { position: absolute; overflow: hidden; }
+      #top_div { top: 0px; left: 0px; right: 0px; height: 0px; }
+      #left_div { top: 0px; left: 0px; width: 0px; bottom: 0px; }
+      #right_div { top: 0px; right: 0px; width: 0px; bottom: 0px; }
+      #bottom_div { bottom: 0px; left: 0px; right: 0px; height: 0px; }
+      #client_div { top: 0px; left: 0px; right: 0px; bottom: 0px; background: #C9BBA1 url("Image?Name=Loader&Crc=C2128974") no-repeat center; }
+      #client_div button, #client_div input, #client_div select { font-family: inherit; font-size: inherit; }
+      #client_div div, #client_div table { position: absolute; }
+    </style>
+    <style type="text/css">
+
+.pi_rotate.pibtn {
+display:none !important;
+}
+
+/*.scrollbar {
+	background: #474747 !important;
+	border-color: #373737 !important;
+}
+.scrollbar_thumb {
+	background: #888888 !important;
+	border: 0 !important;
+	border-radius: 19px;
+}
+.scrollbar_down, .scrollbar_up {
+	border: 0 !important;
+}
+body::-webkit-scrollbar {
+    width: 16px;
+}
+body::-webkit-scrollbar-corner {
+    background-color: #474747;
+}
+body::-webkit-scrollbar-thumb {
+    border-radius: 19px;
+    background-color: #888;
+    border: 4px solid transparent;
+    background-clip: content-box;
+}
+body::-webkit-scrollbar-track {
+    background-color: #474747;
+    border: 1px solid #373737;
+}
+#FontSize {
+	white-space: nowrap;
+}
+.titlewindowsbtn, .defaultwindowsizebtn {
+	top: 7px;
+	width: 16px;
+	height: 16px;
+	text-align: center;
+	line-height: 16px;
+	color: #595959;
+	font-weight: bold;
+}
+.titlewindowsbtn {
+	right: 30px;
+}
+.defaultwindowsizebtn {
+	right: 50px;
+}
+.defaultwindowsizebtn:before, .titlewindowsbtn:before {
+	width: 100%;
+	display: block;
+}
+.defaultwindowsizebtn:before {
+	content: "\2699";
+}
+.titlewindowsbtn:before {
+	content: "\2610";
+}
+#AccountInfo .dialogcontent .bevel:nth-child(6), #AccountInfo .dialogcontent .bevel:nth-child(7), #ai_pw_label1, #ai_pw_input1, #ai_pw_label2, #ai_pw_input2, #ai_pw_desc {
+	display: none !important;
+}
+#AccountLogout, #LobbyExit, #Lobby .closebtn {
+	display: none !important;
+}
+#SitePanel {
+	font-size:0 !important;
+	background-position: right center;
+	background-repeat: no-repeat;
+	background-color: #303030 !important;
+}
+#LoginSelected, #RingSelected, #TourneySelected, #SitnGoSelected {
+	font-size:0 !important;
+}
+
+.dialog, .header {
+	border-radius: 0 !important;
+}
+.header {
+	background: #363937 !important;
+	background: -moz-linear-gradient(top,  #363937 0%, #363937 3%, #141414 3%, #141414 3%, #141414 96%, #141414 96%, #363937 97%, #363937 100%) !important;
+	background: -webkit-linear-gradient(top,  #363937 0%,#363937 3%,#141414 3%,#141414 3%,#141414 96%,#141414 96%,#363937 97%,#363937 100%) !important;
+	background: linear-gradient(to bottom,  #363937 0%,#363937 3%,#141414 3%,#141414 3%,#141414 96%,#141414 96%,#363937 97%,#363937 100%) !important;
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#363937', endColorstr='#363937',GradientType=0 ) !important;
+}
+#client_div .grid {
+	border-color: #303030 !important;
+}
+.grid_header {
+	background: #404040 !important;
+	color:#bbb !important;
+}
+.grid_data>div {
+	border-right-color: #6e6e6e !important;
+}
+
+.menu {
+	background: #303030 !important;
+	color: #fff !important;
+}
+.tabs {
+	background-color: #303030 !important;
+}
+.tabs>ul {
+	background: #14805e !important;
+	width: calc(100% - 6px) !important;
+}
+.tabs>ul>li {
+	border-radius:0 !important;
+	background: none !important;
+	color: #fff !important;
+	line-height: 30px !important;
+	top: 0px !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	cursor: pointer;
+}
+.tabs>ul[style*="height: 40px"]>li {
+	line-height: 40px !important;
+}
+.tabs>ul>li:after {
+	background-color: #fff;
+	width: 100%;
+	height: 2px;
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	content: " ";
+	display: none;
+}
+.tabs>ul>li[style*="font-weight: bold"]:after {
+	display: block;
+}
+button {
+	background: #126e51 !important;
+	color: #fff !important;
+	border: 0 !important;
+	transition: background-color .2s;
+	cursor: pointer;
+}
+button:hover {
+	background: #58d7af !important;
+	color: #333 !important;
+}*/
+.grid_data div {
+	padding: 2px 0;
+}
+.cardshade {
+	border-radius: 0 !important;
+}
+.sp_info {
+	color: #fcdf15 !important;
+}
+
+.sp_seat {
+	-webkit-backface-visibility: hidden;
+	-webkit-transform: translateZ(0) scale(1.0, 1.0);
+	transform: translateZ(0);
+}
+.sp_graphic {
+	-webkit-backface-visibility: hidden;
+	-webkit-transform: translateZ(0) scale(1.0, 1.0);
+	transform: translateZ(0);
+}
+.sp_graphic[style*="SeatEmpty"] {
+	background-image: url('https://i.ibb.co/GfvHPRR3/empty-sea-newt-45.png') !important;
+	background-repeat: no-repeat !important;
+	background-size: cover !important;
+	opacity: 1 !important;
+	height: 40px !important;
+	width: 40px !important;
+	margin: -4px 0 0 40px;
+}
+
+
+      
+
+
+
+
+
+#ai_avatar_image[style*="Name=Avatars"], .sp_avatar[style*="Name=Avatars"] {
+	background-image: url('https://i.ibb.co/N6WBhCWR/avatars.png') !important;
+	background-size: 2048px !important;
+}
+.card[style*="Image?Name=Cards4"], .card[style*="Image?Name=Cards2"] {
+	background-size: 2438px;
+}
+.card[style*="Image?Name=Cards4"] {
+	background-image: url('https://i.ibb.co/B5rsGTnt/Four-Color-Cards.png') !important;
+}
+.card[style*="Image?Name=Cards2"] {
+	background-image: url('https://i.ibb.co/B5rsGTnt/Four-Color-Cards.png') !important;
+}
+
+div#Login.dialog{
+	left: 20px !important;
+}
+div.div_one{
+	position: bottom center !important;
+}
+
+
+.sp_graphic[style*="SeatLeft"], .sp_graphic[style*="SeatRight"] {
+	background-repeat: no-repeat !important;
+	background-size: cover !important;
+	opacity: 1 !important;
+	height: 60px !important;
+	width: 140px !important;
+}
+.sp_graphic[style*="SeatLeft"] {
+	background-image: url('https://i.ibb.co/r2fHdLHC/left-seat.png') !important;
+	margin: -9px 0 0 1px;
+}
+.sp_graphic[style*="SeatRight"] {
+	background-image: url(/modal/images/right-seat.png) !important;
+	margin: -9px 0 0 -10px;
+}
+
+
+
+
+#ai_avatar_image[style*="Name=Avatars"], .sp_avatar[style*="Name=Avatars"] {
+	background-image: url('https://i.ibb.co/N6WBhCWR/avatars.png') !important;
+	background-size: 2048px !important;
+}
+.card[style*="Image?Name=Cards4"], .card[style*="Image?Name=Cards2"] {
+	background-size: 2438px;
+}
+.card[style*="Image?Name=Cards4"] {
+	background-image: url('https://i.ibb.co/B5rsGTnt/Four-Color-Cards.png') !important;
+}
+.card[style*="Image?Name=Cards2"] {
+	background-image: url('https://i.ibb.co/B5rsGTnt/Four-Color-Cards.png') !important;
+}
+div#Login.dialog{
+	left: 20px !important;
+}
+div.div_one{
+	position: bottom center !important;
+}
+
+
+.sp_graphic[style*="SeatLeft"], .sp_graphic[style*="SeatRight"] {
+	background-repeat: no-repeat !important;
+	background-size: cover !important;
+	opacity: 1 !important;
+	height: 60px !important;
+	width: 140px !important;
+}
+.sp_graphic[style*="SeatLeft"] {
+	background-image: url('https://i.ibb.co/r2fHdLHC/left-seat.png') !important;
+	margin: -9px 0 0 1px;
+}
+.sp_graphic[style*="SeatRight"] {
+	background-image: url(/modal/images/right-seat.png) !important;
+	margin: -9px 0 0 -10px;
+}
+
+
+
+
+
+
+
+
+/*#Lobby {
+	background: #303030 !important;
+}*/
+@media (min-width: 961px) and (max-width: 1024px) {
+	#ai_avatar_image[style*="Name=Avatars"], .sp_avatar[style*="Name=Avatars"] {
+		background-image: url("https://i.ibb.co/fspknjg/avatarsmob.png") !important;
+	}
+	.card[style*="Image?Name=Cards4"] {
+		background-image: url('https://i.ibb.co/5xwNxHNk/Four-Color-Cards-Mobile.png') !important;
+	}
+	.card[style*="Image?Name=Cards2"] {
+		background-image: url('https://i.ibb.co/5xwNxHNk/Four-Color-Cards-Mobile.png') !important;
+	}
+
+	.sp_graphic[style*="SeatLeft"], .sp_graphic[style*="SeatRight"] {
+		background-repeat: no-repeat !important;
+		background-size: cover !important;
+		opacity: 1 !important;
+		height: 60px !important;
+		width: 140px !important;
+	}
+	.sp_graphic[style*="SeatLeft"] {
+		background-image: url('https://i.ibb.co/r2fHdLHC/left-seat.png') !important;
+		margin: -9px 0 0 1px;
+	}
+	.sp_graphic[style*="SeatRight"] {
+		background-image: url(/modal/images/right-seat.png) !important;
+		margin: -9px 0 0 -10px;
+	}
+}
+
+	/*Cards Mobile*/
+
+@media (min-width: 320px) and (max-width: 960px) {
+
+		#ai_avatar_image[style*="Name=Avatars"], .sp_avatar[style*="Name=Avatars"] {
+			background-image: url("https://i.ibb.co/fspknjg/avatarsmob.png") !important;
+			
+		}
+		.card[style*="Image?Name=Cards4"] {
+			background-image: url('https://i.ibb.co/5xwNxHNk/Four-Color-Cards-Mobile.png') !important;
+		}
+		.card[style*="Image?Name=Cards2"] {
+			background-image: url('https://i.ibb.co/5xwNxHNk/Four-Color-Cards-Mobile.png') !important;
+			background-size: 3055px !important;
+			
+			height:80px !important;
+		}
+
+
+		.sp_graphic[style*="SeatLeft"], .sp_graphic[style*="SeatRight"] {
+			background-repeat: no-repeat !important;
+			background-size: cover !important;
+			opacity: 1 !important;
+			height: 60px !important;
+			width: 140px !important;
+		}
+
+		.sp_graphic[style*="SeatLeft"] {
+			background-image: url(/modal/images/left-seatnew2.png) !important;
+			margin: -9px 0 0 1px;
+		}
+		.sp_graphic[style*="SeatRight"] {
+			background-image: url(/modal/images/right-seatnew2.png) !important;
+			margin: -9px 0 0 -10px;
+		}
+		
+
+		
+		}
+	/*
+	#OpenTableBox {
+		overflow: hidden;
+	}
+	*/
+	#OpenTableBox .dialog .shader {
+		display: none !important;
+	}
+	#OpenTableBox .dialog {
+		background-color: transparent !important;
+	}
+	#SitePanel {
+		background-image: none !important;
+	}
+
+@media (min-width: 1024px) {
+	#ai_avatar_image[style*="Name=Avatars"], .sp_avatar[style*="Name=Avatars"] {
+		background-image: url('https://i.ibb.co/N6WBhCWR/avatars.png') !important;
+		background-size: 2048px !important;
+	}
+	.card[style*="Image?Name=Cards4"], .card[style*="Image?Name=Cards2"] {
+		background-size: 2438px;
+	}
+	.card[style*="Image?Name=Cards4"] {
+		background-image: url('https://i.ibb.co/B5rsGTnt/Four-Color-Cards.png') !important;
+	}
+	.card[style*="Image?Name=Cards2"] {
+		background-image: url('https://i.ibb.co/B5rsGTnt/Four-Color-Cards.png') !important;
+	}
+	div#Login.dialog{
+		left: 20px !important;
+	}
+	div.div_one{
+		position: bottom center !important;
+	}
+
+
+	.sp_graphic[style*="SeatLeft"], .sp_graphic[style*="SeatRight"] {
+		background-repeat: no-repeat !important;
+		background-size: cover !important;
+		opacity: 1 !important;
+		height: 60px !important;
+		width: 140px !important;
+	}
+	.sp_graphic[style*="SeatLeft"] {
+		background-image: url('https://i.ibb.co/r2fHdLHC/left-seat.png') !important;
+		margin: -9px 0 0 1px;
+	}
+	.sp_graphic[style*="SeatRight"] {
+		background-image: url(/modal/images/right-seat.png) !important;
+		margin: -9px 0 0 -10px;
+	}
+}
+
+#client_div {
+/*background-image: url('https://i.postimg.cc/jS6yBR3q/Gemini-Generated-Image-17y9n517y9n517y9-444.jpg') !important;*/
+background-image: url('https://i.postimg.cc/jRqP0fht/Gemini-2.webp') !important;
+background-size : cover !important;
+}
+
+#BGLogo {display: none !important;}
+
+
+</style>
+
+<script type="text/javascript">
+
+document.addEventListener("DOMContentLoaded", () => {
+  const timer = setInterval(() => {
+    const openTable = document.getElementById('OpenTableControls');
+    const btn = document.querySelector('#mControlsHideBtn button');
+
+    if (openTable && btn) {
+      const style = getComputedStyle(openTable);
+
+      // умова: елемент існує і він не прихований
+      if (!style.display || style.display !== 'none') {
+        // мобільний варіант: викликаємо обробник напряму
+        if (typeof btn.onclick === 'function') {
+          btn.onclick();
+        } else {
+          // імітуємо реальний клік через TouchEvent + MouseEvent
+          btn.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true }));
+          btn.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true }));
+          btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, view: window }));
+          btn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, view: window }));
+          btn.dispatchEvent(new MouseEvent('click', { bubbles: true, view: window }));
+        }
+
+        console.log('✅ Кнопка Hide натиснута після того, як OpenTableControls став активним');
+        clearInterval(timer); // виконуємо лише один раз
+      }
+    }
+  }, 500); // перевірка кожні 0.5 секунди
+});
+
+//----------------------------------------------------------
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Проверка на мобильное устройство
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    const elem = document.documentElement; // можно заменить на конкретный div
+
+    // Функция для запроса fullscreen
+    function requestFullScreen() {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) { // Safari
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) { // IE/Edge
+        elem.msRequestFullscreen();
+      }
+    }
+
+    // Попытка сразу (часто блокируется)
+    requestFullScreen();
+
+    // Если браузер не дал — включаем при первом взаимодействии
+    ["touchstart","click"].forEach(evt => {
+      document.addEventListener(evt, () => {
+        requestFullScreen();
+      }, { once: true });
+    });
+  }
+});
+
+
+//-----------------------------
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const elem = document.documentElement;
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // Кнопка
+  const btn = document.createElement("button");
+  btn.textContent = "Open in full screen mode";
+  Object.assign(btn.style, {
+    position: "fixed",
+    top: "60%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    padding: "20px 40px",
+    background: "#007aff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "12px",
+    fontSize: "22px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    zIndex: "9999"
+  });
+
+  // Повідомлення
+  const msg = document.createElement("div");
+  msg.textContent = "Please turn your phone to landscape position 📱➡️📺";
+  Object.assign(msg.style, {
+    display: "none",
+    position: "fixed",
+    bottom: "20px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    background: "rgba(0,0,0,0.7)",
+    color: "#fff",
+    padding: "10px 20px",
+    borderRadius: "8px",
+    fontSize: "16px"
+  });
+
+  document.body.appendChild(btn);
+  document.body.appendChild(msg);
+
+  async function requestFullScreen() {
+    if (elem.requestFullscreen) {
+      return elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) {
+      return elem.webkitRequestFullscreen();
+    }
+  }
+
+  btn.addEventListener("click", async () => {
+    try {
+      await requestFullScreen();
+
+      if (!isIOS && screen.orientation && screen.orientation.lock) {
+        try {
+          await screen.orientation.lock("landscape");
+        } catch (err) {
+          console.warn("Не вдалося змінити орієнтацію:", err);
+        }
+      } else {
+        msg.style.display = "block"; // показати повідомлення на iOS
+      }
+
+      btn.remove();
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+    }
+  });
+
+  // Слухаємо зміну орієнтації або розміру
+  function checkOrientation() {
+    const landscape = window.innerWidth > window.innerHeight;
+    msg.style.display = landscape ? "none" : "block";
+  }
+
+  window.addEventListener("orientationchange", checkOrientation);
+  window.addEventListener("resize", checkOrientation);
+});
+
+
+
+//----------------------------------------------------------------
+
+
+</script>
+
+<script defer="">
+document.addEventListener("DOMContentLoaded", () => {
+  function getScale(transform) {
+    const m = transform.match(
+      /matrix\(([-\d.]+),\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)/,
+    );
+    if (!m) return null;
+    return { scaleX: parseFloat(m[1]), scaleY: parseFloat(m[4]) };
+  }
+  function applyTransform() {
+    const table = document.querySelector(".tablecontent");
+    if (!table) return;
+
+    const sp_name = document.querySelectorAll(".sp_name.center");
+    if (sp_name.length === 0) return;
+    const sp_info = document.querySelectorAll(".sp_info.center");
+    if (sp_info.length === 0) return;
+
+const chipstack = document.querySelectorAll(".chipstack");
+    if (chipstack.length === 0) return;
+
+
+    const dealer = document.querySelector(".dealer");
+    if (!dealer) return;
+
+    const graphics = document.querySelectorAll(".sp_graphic");
+    if (graphics.length === 0) return;
+
+    const straddle = document.querySelector(".straddle");
+    if (!straddle) return;
+
+    const runtwice = document.querySelector(".runtwice");
+    if (!runtwice) return;
+    const outnexthand = document.querySelector(".outnexthand");
+    if (!outnexthand) return;
+    const outnextblind = document.querySelector(".outnextblind");
+    if (!outnextblind) return;
+
+    const foldanybet = document.querySelector(".foldanybet");
+    if (!foldanybet) return;
+
+    const nextmove1 = document.querySelector(".nextmove1");
+    if (!nextmove1) return;
+    const nextmove2 = document.querySelector(".nextmove2");
+    if (!nextmove2) return;
+    const nextmove3 = document.querySelector(".nextmove3");
+    if (!nextmove3) return;
+    const nextmove4 = document.querySelector(".nextmove4");
+    if (!nextmove4) return;
+    const tablecontent = document.querySelector(".tablecontent");
+    if (!tablecontent) return;
+
+    const icmchop = document.querySelector(".icmchop");
+    if (!icmchop) return;
+    const sp_avatar = document.querySelectorAll(".sp_avatar");
+    if (!sp_avatar) return;
+    const card = document.querySelectorAll(".card");
+    if (!card) return;
+    const totalplate = document.querySelector(".totalplate.center");
+    if (!totalplate) return;
+    const sp_glow = document.querySelector(".sp_glow");
+    if (!sp_glow) return;
+
+    const transform = window.getComputedStyle(table).transform;
+    console.log("Transform:", transform);
+
+    const scale = getScale(transform);
+
+    const isMobileOrTablet =
+      scale &&
+      scale.scaleX >= 1.0 &&
+      scale.scaleX <= 1.6 &&
+      scale.scaleY >= 0.6 &&
+      scale.scaleY <= 0.95;
+
+    if (isMobileOrTablet) {
+      graphics.forEach((g) => (g.style.transform = "scale(1, 1.5)"));
+      dealer.style.transform = "scale(1, 1.5)";
+
+      sp_avatar.forEach((g) => (g.style.transform = "scale(1, 1.5)"));
+      card.forEach((g) => (g.style.transform = "scale(1, 1.5)"));
+chipstack.forEach((g) => (g.style.transform = "scale(1, 1.5)"));
+      sp_name.forEach((g) => (g.style.transform = "scale(1, 1.5)"));
+      sp_name.forEach((g) => g.style.setProperty("top", "-4px", "important"));
+      sp_info.forEach((g) => (g.style.transform = "scale(1, 1.5)"));
+      sp_info.forEach((g) => g.style.setProperty("top", "25px", "important"));
+      card.forEach((g) => {
+        if (g.dataset.baseTop === undefined) {
+          g.dataset.baseTop = parseFloat(getComputedStyle(g).top) || 0;
+        }
+        g.style.setProperty(
+          "top",
+          parseFloat(g.dataset.baseTop) - 8 + "px",
+          "important",
+        );
+      });
+      straddle.style.transform = "scale(1, 1.5)";
+      runtwice.style.transform = "scale(1, 1.5)";
+      outnexthand.style.transform = "scale(1, 1.5)";
+      foldanybet.style.transform = "scale(1, 1.5)";
+      sp_glow.style.setProperty("transform", "scale(1, 1.5)", "important");
+
+      nextmove1.style.transform = "scale(1, 1.5)";
+      nextmove2.style.transform = "scale(1, 1.5)";
+      nextmove3.style.transform = "scale(1, 1.5)";
+      nextmove4.style.transform = "scale(1, 1.5)";
+
+      outnextblind.style.transform = "scale(1, 1.5)";
+      icmchop.style.transform = "scale(1, 1.5)";
+      totalplate.style.transform = "scale(1, 1.5)";
+
+      tablecontent.style.setProperty(
+        "background-position",
+        "0px -80px",
+        "important",
+      );
+      tablecontent.style.setProperty(
+        "background-size",
+        "100% 130%",
+        "important",
+      );
+      tablecontent.style.setProperty(
+        "background-repeat",
+        "no-repeat",
+        "important",
+      );
+    } else {
+      graphics.forEach((g) => (g.style.transform = ""));
+      straddle.style.transform = "";
+      runtwice.style.transform = "";
+      outnexthand.style.transform = "";
+      outnextblind.style.transform = "";
+      foldanybet.style.transform = "";
+      icmchop.style.transform = "";
+      totalplate.style.transform = "";
+      dealer.style.transform = "";
+chipstack.forEach((g) => (g.style.transform = ""));
+      sp_avatar.forEach((g) => (g.style.transform = ""));
+      card.forEach((g) => (g.style.transform = ""));
+     
+      sp_name.forEach((g) => (g.style.transform = ""));
+      sp_name.forEach((g) => g.style.setProperty("top", "2px"));
+      sp_info.forEach((g) => (g.style.transform = ""));
+      sp_info.forEach((g) => g.style.setProperty("top", "20px"));
+      sp_glow.style.transform = "";
+
+      nextmove1.style.transform = "";
+      nextmove2.style.transform = "";
+      nextmove3.style.transform = "";
+      nextmove4.style.transform = "";
+
+      tablecontent.style.setProperty(
+        "background-position",
+        "0px 0px",
+        "important",
+      );
+      tablecontent.style.setProperty(
+        "background-size",
+        "100% 100%",
+        "important",
+      );
+      tablecontent.style.setProperty(
+        "background-repeat",
+        "no-repeat",
+        "important",
+      );
+    }
+  }
+
+  // слухаємо появу будь-яких нових елементів
+  const observer = new MutationObserver(() => {
+    applyTransform();
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // перша перевірка
+  applyTransform();
+
+  // страховка: перевіряти кожні 500 мс
+  setInterval(applyTransform, 500);
+});
+
+
+</script>
+
+    <script>
+      var params = {};
+      params.siteID = "G7-25395";
+      params.sitePlatform = "Win32";
+      params.packetPort = 8443;
+      params.sitePassword = "";
+      params.useSSL = "Yes";
+      params.rabbitHunt = "Yes";
+      params.sitAndGoTab = "No";
+      params.bannerOfs = "0";
+      params.fontFamily = "Arial, sans-serif";
+      params.fontSmall = "0.75em";
+      params.fontNormal = "0.9em";
+      params.fontLarge = "1.05em";
+      params.buttonRadius = "0px";
+      params.gradients = "Yes";
+      params.minWidth = 800;
+      params.minHeight = 600;
+      params.minPassword = 3;
+      params.connectFull = "Fullscreen Mode";
+      params.connectReg = "Regular Mode";
+      params.connectRotate = "Rotate device to landscape mode";
+      params.connectMsg = "Connecting ...";
+      params.connectError = "Websocket Connection Error";
+      params.connectError4000 = "Same-origin policy violation";
+      params.connectError4001 = "Exceeded Max Websocket Connections";
+      params.connectError4002 = "Exceeded Max Websocket Connections per IP";
+      params.connectError4003 = "Exceeded Max Sessions";
+      params.connectTextColor = "#000000";
+      params.showNetChips = "Yes";
+      params.language = 0;
+      params.sixPlus = "Yes";
+      var pset = {};
+      pset.DecimalUSA = "Yes";
+      pset.LobbyChatTime = "No";
+      pset.TableChatTime = "No";
+      pset.ChatBlockAsterisk = "Yes";
+      pset.TimeFormat12 = "Yes";
+      pset.BringToFront = "Yes";
+      pset.HandHelper = "Yes";
+      pset.AutoMuck = "Yes";
+      pset.Deck = "1";
+      pset.DealFaceDown = "No";
+      pset.MuteDealer = "No";
+      pset.Rules6Holdem = "Yes";
+      pset.PreFlopButton1 = "3bb";
+      pset.PreFlopButton2 = "4bb";
+      pset.PreFlopButton3 = "5bb";
+      pset.PreFlopButton4 = "Pot";
+      pset.PostFlopButton1 = "33%";
+      pset.PostFlopButton2 = "50%";
+      pset.PostFlopButton3 = "67%";
+      pset.PostFlopButton4 = "Pot";
+    </script>
+    <script src="Source?Name=JQueryMinJs&amp;Ver=7.33&amp;Crc=F162F766" type="text/javascript"></script>
+    <script src="Source?Name=PokerMinJs&amp;Ver=7.33&amp;Crc=F162F766" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="top_div" class="edgepanel"></div>
+    <div id="left_div" class="edgepanel"></div>
+    <div id="client_div" class="centerpanel"></div>
+    <div id="right_div" class="edgepanel"></div>
+    <div id="bottom_div" class="edgepanel"></div>
+    <script>if ("WebSocket" in window == false) alert("Error: this browser does not support WebSockets");</script>
+    <script>$(window).on("load", function(){$("#client_div").load("Source?Name=ClientHtm&amp;Ver=7.33&amp;Crc=F162F766", poker);});</script>
+  <script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;237d22ac7ae145fab57dff1ab46ccf01&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+
+<button style="position: fixed; top: 60%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; background: rgb(0, 122, 255); color: rgb(255, 255, 255); border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; border-radius: 12px; font-size: 22px; font-weight: bold; cursor: pointer; z-index: 9999;">Open in full screen mode</button><div style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: rgb(255, 255, 255); padding: 10px 20px; border-radius: 8px; font-size: 16px;">Please turn your phone to landscape position 📱➡️📺</div></body></html>

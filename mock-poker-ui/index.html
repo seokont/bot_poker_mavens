@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mock Poker Mavens</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ═══ Login View ═══ -->
+    <div id="login-view" class="view active">
+      <div class="login-container">
+        <div class="login-title">Poker Mavens</div>
+        <form id="login-form">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter username" autocomplete="off" />
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter password" />
+          <button type="submit">Login</button>
+          <div class="error-message"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ═══ Lobby View ═══ -->
+    <div id="lobby-view" class="view">
+      <div class="lobby-header">
+        <h1>Poker Lobby</h1>
+        <div class="lobby-user-info">
+          <span class="lobby-username"></span>
+          <button id="logout-btn" class="small-btn">Logout</button>
+        </div>
+      </div>
+      <div class="lobby-tables">
+        <table id="lobby-table">
+          <thead>
+            <tr>
+              <th>Table Name</th>
+              <th>Game Type</th>
+              <th>Blinds</th>
+              <th>Players</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="lobby-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ Table View ═══ -->
+    <div id="table-view" class="view">
+      <div class="table-header">
+        <button id="lobby-btn" class="small-btn">Lobby</button>
+        <h2 id="table-name-header"></h2>
+        <div class="table-header-right">
+          <button id="disconnect-btn" class="small-btn danger-btn">Disconnect</button>
+        </div>
+      </div>
+
+      <!-- Poker Table -->
+      <div class="poker-table-wrapper">
+        <div class="poker-table">
+          <!-- Dealer button indicator -->
+          <div class="dealer-button">D</div>
+
+          <!-- Seat positions arranged in oval -->
+          <div class="seat seat-0" data-seat="0">
+            <span class="seat-label">Seat 1</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-1" data-seat="1">
+            <span class="seat-label">Seat 2</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-2" data-seat="2">
+            <span class="seat-label">Seat 3</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-3" data-seat="3">
+            <span class="seat-label">Seat 4</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-4" data-seat="4">
+            <span class="seat-label">Seat 5</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-5" data-seat="5">
+            <span class="seat-label">Seat 6</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-6" data-seat="6">
+            <span class="seat-label">Seat 7</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-7" data-seat="7">
+            <span class="seat-label">Seat 8</span>
+            <span class="seat-player"></span>
+          </div>
+          <div class="seat seat-8" data-seat="8">
+            <span class="seat-label">Seat 9</span>
+            <span class="seat-player"></span>
+          </div>
+
+          <!-- Table center area -->
+          <div class="table-center">
+            <div class="pot-display">
+              <span class="pot-label">Pot:</span>
+              <span class="pot-amount">0</span>
+            </div>
+            <div class="board-cards">
+              <div class="card-space card" data-index="0"></div>
+              <div class="card-space card" data-index="1"></div>
+              <div class="card-space card" data-index="2"></div>
+              <div class="card-space card" data-index="3"></div>
+              <div class="card-space card" data-index="4"></div>
+            </div>
+            <div class="street-label"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero cards and stack -->
+      <div class="hero-area">
+        <div class="hero-cards">
+          <div class="card-space card" data-index="0"></div>
+          <div class="card-space card" data-index="1"></div>
+        </div>
+        <div class="hero-info">
+          <span class="hero-stack">Stack: 1000</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="action-bar">
+        <button class="action-btn fold">Fold</button>
+        <button class="action-btn check">Check</button>
+        <button class="action-btn call">Call</button>
+        <div class="bet-group">
+          <button class="action-btn bet">Bet</button>
+          <input type="number" class="bet-amount-input" placeholder="Amount" min="1" />
+        </div>
+        <div class="raise-group">
+          <button class="action-btn raise">Raise</button>
+          <input type="number" class="bet-amount-input" placeholder="Amount" min="1" />
+        </div>
+        <button class="action-btn all-in">All-In</button>
+        <div class="action-timer">--</div>
+      </div>
+
+      <!-- Action history -->
+      <div class="action-history-panel">
+        <h3>Action History</h3>
+        <div class="action-history"></div>
+      </div>
+    </div>
+
+    <!-- ═══ Buy-In Modal ═══ -->
+    <div id="buyin-modal" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Buy In</h2>
+        <p>Enter your buy-in amount:</p>
+        <input type="number" class="buy-in-amount" placeholder="Amount" min="20" value="1000" />
+        <div class="modal-buttons">
+          <button class="buy-in-confirm">Confirm</button>
+          <button class="buy-in-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

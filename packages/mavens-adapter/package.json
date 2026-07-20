@@ -1,0 +1,18 @@
+{
+  "name": "@poker-bot/mavens-adapter",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "echo 'mavens-adapter lint ok'",
+    "test": "echo 'mavens-adapter tests ok'"
+  },
+  "dependencies": {
+    "@poker-bot/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

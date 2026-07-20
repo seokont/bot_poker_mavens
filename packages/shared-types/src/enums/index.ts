@@ -1,0 +1,127 @@
+export enum BotStatus {
+  OFFLINE = 'OFFLINE',
+  STARTING = 'STARTING',
+  AUTHORIZING = 'AUTHORIZING',
+  IN_LOBBY = 'IN_LOBBY',
+  JOINING_TABLE = 'JOINING_TABLE',
+  WAITING_FOR_SEAT = 'WAITING_FOR_SEAT',
+  SEATED = 'SEATED',
+  PLAYING = 'PLAYING',
+  SITTING_OUT = 'SITTING_OUT',
+  RECONNECTING = 'RECONNECTING',
+  STOPPING = 'STOPPING',
+  ERROR = 'ERROR',
+}
+
+export enum BotDifficulty {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD',
+}
+
+export enum BotOperationMode {
+  OBSERVER = 'OBSERVER',
+  ASSISTED = 'ASSISTED',
+  AUTONOMOUS = 'AUTONOMOUS',
+}
+
+export enum AdminRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  OPERATOR = 'OPERATOR',
+  VIEWER = 'VIEWER',
+}
+
+export enum RebuyMode {
+  DISABLED = 'DISABLED',
+  MANUAL = 'MANUAL',
+  AUTO_TO_MIN = 'AUTO_TO_MIN',
+  AUTO_TO_TARGET = 'AUTO_TO_TARGET',
+  AUTO_TO_MAX = 'AUTO_TO_MAX',
+}
+
+export enum BotErrorCode {
+  LOGIN_FAILED = 'LOGIN_FAILED',
+  SESSION_EXPIRED = 'SESSION_EXPIRED',
+  TABLE_NOT_FOUND = 'TABLE_NOT_FOUND',
+  TABLE_NOT_ALLOWED = 'TABLE_NOT_ALLOWED',
+  NO_AVAILABLE_SEAT = 'NO_AVAILABLE_SEAT',
+  BUY_IN_FAILED = 'BUY_IN_FAILED',
+  GAME_STATE_READ_FAILED = 'GAME_STATE_READ_FAILED',
+  INVALID_GAME_STATE = 'INVALID_GAME_STATE',
+  NOT_HERO_TURN = 'NOT_HERO_TURN',
+  STALE_HAND = 'STALE_HAND',
+  STALE_TURN = 'STALE_TURN',
+  DUPLICATE_ACTION = 'DUPLICATE_ACTION',
+  ACTION_NOT_ALLOWED = 'ACTION_NOT_ALLOWED',
+  INVALID_BET_AMOUNT = 'INVALID_BET_AMOUNT',
+  ACTION_TIMEOUT = 'ACTION_TIMEOUT',
+  BROWSER_DISCONNECTED = 'BROWSER_DISCONNECTED',
+  RECONNECT_FAILED = 'RECONNECT_FAILED',
+  LIMIT_REACHED = 'LIMIT_REACHED',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+}
+
+export enum Street {
+  PREFLOP = 'PREFLOP',
+  FLOP = 'FLOP',
+  TURN = 'TURN',
+  RIVER = 'RIVER',
+  SHOWDOWN = 'SHOWDOWN',
+}
+
+export enum GameType {
+  NLH = 'NLH',
+  PLO4 = 'PLO4',
+  PLO5 = 'PLO5',
+  PLO6 = 'PLO6',
+}
+
+export enum LimitType {
+  NL = 'NL',
+  PL = 'PL',
+  FL = 'FL',
+}
+
+export enum Position {
+  SB = 'SB',
+  BB = 'BB',
+  UTG = 'UTG',
+  UTG1 = 'UTG1',
+  MP = 'MP',
+  HJ = 'HJ',
+  CO = 'CO',
+  BTN = 'BTN',
+}
+
+export enum ActionType {
+  FOLD = 'FOLD',
+  CHECK = 'CHECK',
+  CALL = 'CALL',
+  BET = 'BET',
+  RAISE = 'RAISE',
+  ALL_IN = 'ALL_IN',
+}
+
+export enum CardRank {
+  TWO = '2',
+  THREE = '3',
+  FOUR = '4',
+  FIVE = '5',
+  SIX = '6',
+  SEVEN = '7',
+  EIGHT = '8',
+  NINE = '9',
+  TEN = 'T',
+  JACK = 'J',
+  QUEEN = 'Q',
+  KING = 'K',
+  ACE = 'A',
+}
+
+export enum CardSuit {
+  CLUBS = 'c',
+  DIAMONDS = 'd',
+  HEARTS = 'h',
+  SPADES = 's',
+}

@@ -1,0 +1,10 @@
+{
+  "botId": "cmrnqn5il0001z0fukn3n3aau",
+  "timestamp": "2026-07-17T08:45:06.306Z",
+  "message": "Failed to get direct link: 500 {\"statusCode\":500,\"message\":\"Internal server error\"}",
+  "stack": "Error: Failed to get direct link: 500 {\"statusCode\":500,\"message\":\"Internal server error\"}\n    at WorkerService.joinTable (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:202:15)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async WorkerService.handleJob (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:860:11)\n    at async WorkerService.processJobs (D:\\bot_poker_mavens_2\\apps\\bot-worker\\src\\worker\\worker.service.ts:818:11)",
+  "screenshotPath": "storage\\errors\\cmrnqn5il0001z0fukn3n3aau\\2026-07-17\\screenshot-2026-07-17T08-45-06-306Z.png",
+  "url": "https://iqpoker88.com/",
+  "htmlSnapshotPath": "storage\\errors\\cmrnqn5il0001z0fukn3n3aau\\2026-07-17\\snapshot-2026-07-17T08-45-06-306Z.html",
+  "consoleErrors": []
+}

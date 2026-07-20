@@ -1,0 +1,68 @@
+- generic [ref=e5]:
+  - banner [ref=e6]:
+    - generic [ref=e7]:
+      - button [ref=e8] [cursor=pointer]:
+        - generic [ref=e9]: 󰍜
+      - generic [ref=e11]: Poker Mavens Bot Platform
+      - generic [ref=e13]: Disconnected
+      - button [ref=e15] [cursor=pointer]:
+        - generic [ref=e16]: 󰍃
+  - navigation [ref=e18]:
+    - list [ref=e20]:
+      - link "Dashboard" [ref=e21] [cursor=pointer]:
+        - /url: "#/"
+        - generic [ref=e22]: 󰕮
+      - link "Bots" [ref=e26] [cursor=pointer]:
+        - /url: "#/bots"
+        - generic [ref=e27]: 󰚩
+      - link "Tables" [ref=e31] [cursor=pointer]:
+        - /url: "#/tables"
+        - generic [ref=e32]: 󰓫
+      - link "Hands" [ref=e36] [cursor=pointer]:
+        - /url: "#/hands"
+        - generic [ref=e37]: 󰘸
+      - link "Strategies" [ref=e41] [cursor=pointer]:
+        - /url: "#/strategies"
+        - generic [ref=e42]: 󰧑
+      - link "Logs" [ref=e46] [cursor=pointer]:
+        - /url: "#/logs"
+        - generic [ref=e47]: 󰺮
+  - main [ref=e51]:
+    - generic [ref=e53]:
+      - heading "Dashboard" [level=2] [ref=e54]
+      - generic [ref=e55]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: 󰚩
+          - generic [ref=e60]: "3"
+          - generic [ref=e61]: Total Bots
+        - generic [ref=e64]:
+          - generic [ref=e65]: 󱜙
+          - generic [ref=e66]: "2"
+          - generic [ref=e67]: Active Bots
+        - generic [ref=e70]:
+          - generic [ref=e71]: 󱢡
+          - generic [ref=e72]: "0"
+          - generic [ref=e73]: Playing Bots
+        - generic [ref=e76]:
+          - generic [ref=e77]: 󱚧
+          - generic [ref=e78]: "1"
+          - generic [ref=e79]: Offline Bots
+        - generic [ref=e82]:
+          - generic [ref=e83]: 󰀨
+          - generic [ref=e84]: "0"
+          - generic [ref=e85]: Bots with Errors
+        - generic [ref=e88]:
+          - generic [ref=e89]: 󰓫
+          - generic [ref=e90]: "16"
+          - generic [ref=e91]: Current Tables
+        - generic [ref=e94]:
+          - generic [ref=e95]: 󰘸
+          - generic [ref=e96]: "0"
+          - generic [ref=e97]: Hands Today
+        - generic [ref=e100]:
+          - generic [ref=e101]: 󰇁
+          - generic [ref=e102]: $0
+          - generic [ref=e103]: Total P/L
+      - generic [ref=e104]:
+        - generic [ref=e105]: Profit / Loss Over Time
+        - generic [ref=e112]: Bot Activity

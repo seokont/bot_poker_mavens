@@ -1,0 +1,20 @@
+{
+  "name": "@poker-bot/poker-engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "echo 'poker-engine lint ok'",
+    "test": "echo 'poker-engine tests ok'"
+  },
+  "dependencies": {
+    "@poker-bot/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0"
+  }
+}
