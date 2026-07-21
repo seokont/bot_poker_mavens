@@ -288,6 +288,18 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       await page.waitForTimeout(3000);
       await this.dismissNoticeDialogs(page);
 
+      // The "Open in full screen mode" overlay is injected unconditionally
+      // on page load (not just on mobile user agents) and sits fixed/on-top
+      // (z-index 9999) over the whole table - confirmed live via a debug
+      // screenshot showing it still covering the table at the "after-buyin"
+      // stage while the bot's own name never appeared in any seat. Only
+      // dismissing it later (right before the ready-button clicks) meant
+      // every click up to that point - clickEmptySeat, the buy-in dialog -
+      // could have silently landed on this overlay instead of the real
+      // control underneath it. Dismiss it here too, before touching the
+      // seat at all.
+      await this.dismissFullScreenPrompt(page);
+
       // Try to find and click any visible empty seat
       const emptySeatClicked = await this.clickEmptySeat(page);
 
@@ -302,6 +314,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
 
       // 4. Handle buy-in if the dialog appears
       this.stateMachine.setState(botId, BotState.BUYING_IN);
+      await this.dismissFullScreenPrompt(page);
 
       if (buyIn) {
         await this.performBuyIn(page, buyIn);
