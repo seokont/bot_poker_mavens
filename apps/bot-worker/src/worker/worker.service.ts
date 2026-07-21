@@ -172,6 +172,26 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
   ): Promise<boolean> {
     let context = this.botContexts.get(botId);
 
+    // A stale ERROR status in the backend's DB (e.g. from an earlier
+    // ground-truth-check false negative) can cause the admin UI/an operator
+    // to re-issue join-table for a bot that is, in reality, already seated
+    // and actively playing - confirmed live via a
+    // "[BotStateMachine] Invalid transition ... from DECIDING to
+    // OPENING_TABLE" while the bot's own GameLoop was mid-hand. Re-running
+    // the full navigate/buy-in/ready sequence on that same browser tab
+    // opens a redundant duplicate table window on top of the live one,
+    // corrupting DOM reads for both. Short-circuit here instead.
+    if (
+      context?.status === 'seated' &&
+      context.tableId === tableId &&
+      this.gameLoopService.isRunning(botId)
+    ) {
+      console.log(
+        `[Worker] joinTable: bot "${botId}" already seated and playing at "${tableId}" - skipping redundant re-join`,
+      );
+      return true;
+    }
+
     // Auto-start bot if not running
     if (!context?.page) {
       console.log(`[Worker] joinTable: bot not running, auto-starting bot "${botId}"`);

@@ -158,6 +158,10 @@ export class GameLoopService implements OnModuleDestroy {
     this.states.delete(botId);
   }
 
+  isRunning(botId: string): boolean {
+    return this.states.has(botId);
+  }
+
   pause(botId: string): void {
     const state = this.states.get(botId);
     if (state) state.paused = true;
