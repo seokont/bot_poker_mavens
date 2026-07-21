@@ -274,6 +274,12 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
 
       console.log(`[Worker] joinTable: navigated to table "${tableId}"`);
 
+      // Our own login is in the direct-link URL (`LoginName=...`) - resolved
+      // once up front since it's used by the ground-truth check below both
+      // right after buy-in and (informationally) after the ready clicks.
+      const ownLoginMatch = page.url().match(/LoginName=([^&]+)/i);
+      const ownLogin = ownLoginMatch ? decodeURIComponent(ownLoginMatch[1]) : login;
+
       // 3. Click on an empty seat (sp_seat) to sit down
       this.stateMachine.setState(botId, BotState.WAITING_FOR_SEAT);
       console.log(`[Worker] joinTable: looking for empty seat`);
@@ -300,6 +306,31 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       if (buyIn) {
         await this.performBuyIn(page, buyIn);
         await this.captureDebugSnapshot(page, botId, 'after-buyin');
+      }
+
+      // Ground-truth check right after buy-in, BEFORE the ready-button
+      // clicks: confirmed live via a debug screenshot that the seatplate
+      // reliably shows our real name+stack at this point, but a few seconds
+      // later (after clicking ready) the site can briefly swap the name for
+      // a "waiting for big blind" status message when joining mid-hand -
+      // checking here instead of after the ready clicks avoids racing that
+      // transient window entirely, rather than trying to retry through it.
+      // A buy-in that's silently rejected by the site (e.g. an invalid/
+      // empty amount) leaves no real seat regardless of what the later
+      // ready-click sequence appears to do, so this is still the check that
+      // actually matters.
+      if (buyIn && ownLogin) {
+        const seatedAfterBuyIn = await this.isOwnNameInSeatplate(page, ownLogin, 3, 1500);
+        if (!seatedAfterBuyIn) {
+          console.warn(
+            `[Worker] joinTable: buy-in completed but "${ownLogin}" is not visible in any seatplate - the seat was not actually taken`,
+          );
+          this.stateMachine.setState(botId, BotState.ERROR);
+          await this.reportStatus(botId, 'ERROR', {
+            errorMessage: 'Buy-in did not result in a visible seat',
+          });
+          return false;
+        }
       }
 
       // 5. Click ready/sit-in button after seating
@@ -332,51 +363,18 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
 
       await this.dismissNoticeDialogs(page);
 
-      // Final ground-truth check: even when every click along the way
-      // "succeeded" (buy-in confirmed, no waitlist detected), the buy-in
-      // can still be silently rejected by the site (e.g. an invalid/empty
-      // amount) and leave the bot with no real seat - confirmed live, where
-      // the bot's own browser showed only the other player seated. Our own
-      // login is in the direct-link URL (`LoginName=...`); a real seat
-      // means a visible `.seatplate .sp_name` matching it.
-      const ownLoginMatch = page.url().match(/LoginName=([^&]+)/i);
-      const ownLogin = ownLoginMatch ? decodeURIComponent(ownLoginMatch[1]) : login;
-
+      // Informational-only re-check: the hard ground-truth check already ran
+      // right after buy-in (before the ready clicks), so a real seat is
+      // already confirmed - failing here almost always just means the site
+      // is showing a transient "waiting for big blind" status in place of
+      // the name (confirmed live) rather than a real problem, so this only
+      // logs rather than aborting a seat we already know is real.
       if (ownLogin) {
-        // The site briefly swaps the seatplate's name text for a status
-        // message ("waiting for big blind") when a bot joins mid-hand -
-        // confirmed live via a debug screenshot where "Oran101" was
-        // genuinely seated (name + stack visible moments earlier) but the
-        // name text read "ממתינה לבליינד הגדול" at the instant of a single
-        // sample. A one-shot check can land inside that window and wrongly
-        // conclude the seat wasn't taken, so retry a few times before
-        // giving up - the name reappears once the status clears.
-        let actuallySeated: boolean | null = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          actuallySeated = await page.evaluate((name: string) => {
-            const doc = (globalThis as any).document;
-            const nameEls = doc.querySelectorAll('.sp_name');
-            for (const el of nameEls) {
-              if (el.offsetParent !== null && (el.textContent || '').trim() === name) {
-                return true;
-              }
-            }
-            return false;
-          }, ownLogin).catch(() => null);
-
-          if (actuallySeated) break;
-          if (attempt < 2) await page.waitForTimeout(1500);
-        }
-
-        if (actuallySeated === false) {
-          console.warn(
-            `[Worker] joinTable: buy-in/ready sequence completed but "${ownLogin}" is not visible in any seatplate - the seat was not actually taken`,
+        const stillVisible = await this.isOwnNameInSeatplate(page, ownLogin, 1, 0);
+        if (!stillVisible) {
+          console.log(
+            `[Worker] joinTable: "${ownLogin}" not showing in seatplate post-ready (likely a transient status-text swap) - seat already confirmed after buy-in, proceeding`,
           );
-          this.stateMachine.setState(botId, BotState.ERROR);
-          await this.reportStatus(botId, 'ERROR', {
-            errorMessage: 'Buy-in did not result in a visible seat',
-          });
-          return false;
         }
       }
 
@@ -967,6 +965,38 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       console.warn(`[Worker] captureDebugSnapshot failed for "${label}":`, err);
     }
+  }
+
+  /**
+   * Checks whether `name` is showing as a visible `.sp_name` anywhere on the
+   * table - the ground-truth signal that a seat is actually held, since
+   * clicks/dialogs along the join path can all "succeed" while the site
+   * silently rejects the buy-in. Retries with a delay between attempts
+   * because the name can be legitimately absent for a moment (page still
+   * rendering right after buy-in) without meaning the seat wasn't taken.
+   */
+  private async isOwnNameInSeatplate(
+    page: Page,
+    name: string,
+    attempts: number,
+    delayMs: number,
+  ): Promise<boolean> {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const found = await page.evaluate((n: string) => {
+        const doc = (globalThis as any).document;
+        const nameEls = doc.querySelectorAll('.sp_name');
+        for (const el of nameEls) {
+          if (el.offsetParent !== null && (el.textContent || '').trim() === n) {
+            return true;
+          }
+        }
+        return false;
+      }, name).catch(() => false);
+
+      if (found) return true;
+      if (attempt < attempts - 1) await page.waitForTimeout(delayMs);
+    }
+    return false;
   }
 
   /**
