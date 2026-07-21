@@ -1049,7 +1049,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
    */
   private async dismissFullScreenPrompt(page: Page): Promise<void> {
     try {
-      const clicked = await page.evaluate(() => {
+      const removed = await page.evaluate(() => {
         const doc = (globalThis as any).document;
         // offsetParent is null for position:fixed elements even when they're
         // genuinely visible (a real browser quirk, not just "is it hidden") -
@@ -1067,14 +1067,24 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
           const text = (el.textContent || '').trim().toLowerCase();
           if (!text.includes('full screen') && !text.includes('fullscreen')) continue;
           if (!isVisible(el)) continue;
-          el.click();
-          return text.substring(0, 60);
+          // Removing the element directly instead of clicking it: the
+          // site's own click handler awaits `elem.requestFullscreen()`,
+          // which is unconditionally rejected in headless Chromium (no
+          // Fullscreen API without a real user gesture) - confirmed live
+          // via a captured page snapshot showing this exact button still
+          // present, unremoved, after it had already been "clicked" several
+          // times. Its handler only calls `btn.remove()` after that awaited
+          // call resolves, so clicking it here can never actually get rid
+          // of it; removing it ourselves sidesteps the site's broken
+          // promise chain entirely.
+          const label = text.substring(0, 60);
+          el.remove();
+          return label;
         }
         return null;
       });
-      if (clicked) {
-        console.log(`[Worker] dismissFullScreenPrompt: clicked "${clicked}"`);
-        await page.waitForTimeout(1000);
+      if (removed) {
+        console.log(`[Worker] dismissFullScreenPrompt: removed "${removed}"`);
       }
     } catch {
       // Best-effort - if this fails, the normal ready-button flow below still runs.
