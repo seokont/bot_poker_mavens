@@ -297,16 +297,30 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       const ownLogin = ownLoginMatch ? decodeURIComponent(ownLoginMatch[1]) : login;
 
       if (ownLogin) {
-        const actuallySeated = await page.evaluate((name: string) => {
-          const doc = (globalThis as any).document;
-          const nameEls = doc.querySelectorAll('.sp_name');
-          for (const el of nameEls) {
-            if (el.offsetParent !== null && (el.textContent || '').trim() === name) {
-              return true;
+        // The site briefly swaps the seatplate's name text for a status
+        // message ("waiting for big blind") when a bot joins mid-hand -
+        // confirmed live via a debug screenshot where "Oran101" was
+        // genuinely seated (name + stack visible moments earlier) but the
+        // name text read "ממתינה לבליינד הגדול" at the instant of a single
+        // sample. A one-shot check can land inside that window and wrongly
+        // conclude the seat wasn't taken, so retry a few times before
+        // giving up - the name reappears once the status clears.
+        let actuallySeated: boolean | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          actuallySeated = await page.evaluate((name: string) => {
+            const doc = (globalThis as any).document;
+            const nameEls = doc.querySelectorAll('.sp_name');
+            for (const el of nameEls) {
+              if (el.offsetParent !== null && (el.textContent || '').trim() === name) {
+                return true;
+              }
             }
-          }
-          return false;
-        }, ownLogin).catch(() => null);
+            return false;
+          }, ownLogin).catch(() => null);
+
+          if (actuallySeated) break;
+          if (attempt < 2) await page.waitForTimeout(1500);
+        }
 
         if (actuallySeated === false) {
           console.warn(
