@@ -100,8 +100,24 @@ export class MediumStrategy {
         if (hasCheck) {
           return { action: ActionType.CHECK, confidence: 0.65, reason: 'MEDIUM_PREFLOP_MEDIUM_CHECK' };
         }
-        if (hasCall && state.amountToCall <= state.bigBlind * 40 && potOdds < 85) {
+        // Operator-requested loosening: the old bigBlind*40 absolute cap
+        // blocked a medium-strength hand from calling any bet bigger than
+        // 40bb regardless of pot odds - confirmed live, it folded hands
+        // with ~44% required equity (well within potOdds<85) purely
+        // because the raise/all-in was large in chip terms. Widened to
+        // bigBlind*300 so pot odds (the actually correct metric) decide
+        // instead of a flat chip-count wall.
+        if (hasCall && state.amountToCall <= state.bigBlind * 300 && potOdds < 85) {
           return { action: ActionType.CALL, confidence: 0.6, reason: 'MEDIUM_PREFLOP_MEDIUM_CALL' };
+        }
+        // Occasionally re-raise/shove with real medium strength instead of
+        // only ever calling passively, when there's still room to raise and
+        // the price is clearly favorable.
+        if (hasRaise && potOdds < 35 && Math.random() < 0.25) {
+          return { action: ActionType.RAISE, amount: raiseSize(), confidence: 0.55, reason: 'MEDIUM_PREFLOP_MEDIUM_RERAISE' };
+        }
+        if (hasAllIn && isShortStacked && potOdds < 60) {
+          return { action: ActionType.ALL_IN, confidence: 0.6, reason: 'MEDIUM_PREFLOP_MEDIUM_SHOVE' };
         }
       }
 
