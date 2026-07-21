@@ -24,7 +24,7 @@ export interface BotContext {
 
 interface JobData {
   type: string;
-  botId: string;
+  botId: string | null;
   login?: string;
   password?: string;
   tableId?: string;
@@ -161,6 +161,32 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       this.resourceManager.decrementBotCount();
       return false;
     }
+  }
+
+  /**
+   * Emergency "kill switch" for this worker: stops every bot this process
+   * currently knows about, then does an unconditional sweep to close any
+   * browser/context Playwright still has open even if it isn't (or is no
+   * longer) tracked in botContexts - e.g. a context left behind by a
+   * duplicate/corrupted join sequence. Intended for the admin UI's
+   * emergency-stop button, which must guarantee no real-money browser
+   * session is left running afterward, not just the ones with a clean
+   * in-memory record.
+   */
+  async emergencyStopAll(): Promise<void> {
+    const botIds = Array.from(this.botContexts.keys());
+    console.warn(`[Worker] emergencyStopAll: stopping ${botIds.length} tracked bot(s)`);
+
+    for (const botId of botIds) {
+      try {
+        await this.stopBot(botId);
+      } catch (err) {
+        console.error(`[Worker] emergencyStopAll: failed to stop bot ${botId}:`, err);
+      }
+    }
+
+    await this.playwrightManager.closeAll();
+    console.warn('[Worker] emergencyStopAll: closeAll sweep complete');
   }
 
   async joinTable(
@@ -1245,36 +1271,37 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       'SIT_IN': 'sitIn',
       'REBUY': 'rebuy',
       'EXECUTE_ACTION': 'executeAction',
+      'EMERGENCY_STOP_ALL': 'emergencyStopAll',
     };
     const normalizedType = typeMap[type] || type;
 
     try {
       switch (normalizedType) {
         case 'startBot':
-          await this.startBot(botId, job.login, job.password);
+          await this.startBot(botId!, job.login, job.password);
           break;
         case 'stopBot':
-          await this.stopBot(botId);
+          await this.stopBot(botId!);
           break;
         case 'joinTable':
-          await this.joinTable(botId, job.tableId!, job.buyIn, job.login, job.password);
+          await this.joinTable(botId!, job.tableId!, job.buyIn, job.login, job.password);
           break;
         case 'leaveTable':
-          await this.leaveTable(botId);
+          await this.leaveTable(botId!);
           break;
         case 'sitOut':
-          await this.sitOut(botId);
+          await this.sitOut(botId!);
           break;
         case 'sitIn':
-          await this.sitIn(botId);
+          await this.sitIn(botId!);
           break;
         case 'rebuy':
-          await this.rebuy(botId, job.amount!);
+          await this.rebuy(botId!, job.amount!);
           break;
         case 'executeAction': {
-          const context = this.botContexts.get(botId);
+          const context = this.botContexts.get(botId!);
           await this.actionExecutor.executeAction(
-            botId,
+            botId!,
             job.tableId!,
             job.handId!,
             job.turnId!,
@@ -1284,12 +1311,16 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
           );
           break;
         }
+        case 'emergencyStopAll':
+          await this.emergencyStopAll();
+          break;
         default:
           console.warn(`[Worker] Unknown job type: ${type}`);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      await this.errorHandler.handleError(botId, error);
+      if (botId) await this.errorHandler.handleError(botId, error);
+      else console.error('[Worker] emergencyStopAll failed:', error);
     }
   }
 }

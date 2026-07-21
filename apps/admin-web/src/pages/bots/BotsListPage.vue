@@ -27,6 +27,11 @@
               Stop All Selected
             </v-btn>
           </v-col>
+          <v-col cols="auto">
+            <v-btn color="error" variant="elevated" prepend-icon="mdi-alert-octagon" @click="showEmergencyDialog = true">
+              🚨 Emergency Stop All Bots
+            </v-btn>
+          </v-col>
         </v-row>
       </v-card-title>
       <v-data-table-server
@@ -113,6 +118,22 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="showEmergencyDialog" max-width="480">
+      <v-card>
+        <v-card-title class="text-error">🚨 Emergency Stop All Bots</v-card-title>
+        <v-card-text>
+          This immediately stops <strong>every bot on every worker</strong> and closes all of their open browser
+          sessions, then marks all bots OFFLINE - including ones currently seated or mid-hand. Use this only if bots
+          are misbehaving and need to be pulled from the tables right now.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="showEmergencyDialog = false">Cancel</v-btn>
+          <v-btn color="error" :loading="emergencyStopping" @click="emergencyStopAll">Stop Everything Now</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="showDeleteDialog" max-width="440">
       <v-card>
         <v-card-title>Delete Bot</v-card-title>
@@ -152,6 +173,9 @@ const newBot = ref({ name: '', login: '', password: '', defaultBuyIn: 1000 });
 
 const showDeleteDialog = ref(false);
 const deletingBot = ref<any>(null);
+
+const showEmergencyDialog = ref(false);
+const emergencyStopping = ref(false);
 
 const showAddBalanceDialog = ref(false);
 const addBalanceBot = ref<any>(null);
@@ -327,6 +351,24 @@ async function bulkStop() {
     snackbar.show = true;
     snackbar.message = 'Failed to bulk stop';
     snackbar.color = 'error';
+  }
+}
+
+async function emergencyStopAll() {
+  emergencyStopping.value = true;
+  try {
+    const response = await botsApi.emergencyStopAll();
+    snackbar.show = true;
+    snackbar.message = response.data?.message || 'Emergency stop sent to all workers';
+    snackbar.color = 'success';
+    showEmergencyDialog.value = false;
+    await loadBots();
+  } catch (err: any) {
+    snackbar.show = true;
+    snackbar.message = err.response?.data?.message || 'Failed to send emergency stop';
+    snackbar.color = 'error';
+  } finally {
+    emergencyStopping.value = false;
   }
 }
 </script>

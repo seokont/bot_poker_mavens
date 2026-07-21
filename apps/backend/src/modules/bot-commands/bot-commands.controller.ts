@@ -181,4 +181,11 @@ export class BotCommandsController {
   async bulkLeaveTable(@Body() body: BulkBotIdsBody) {
     return this.botCommandsService.bulkLeaveTable(body.botIds);
   }
+
+  @Post('emergency-stop-all')
+  @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
+  @ApiOperation({ summary: 'Emergency stop: close every bot browser on every worker and mark all bots OFFLINE' })
+  async emergencyStopAll() {
+    return this.botCommandsService.emergencyStopAll();
+  }
 }

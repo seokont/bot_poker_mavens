@@ -311,4 +311,32 @@ export class BotCommandsService {
 
     return { success: true, results };
   }
+
+  /**
+   * Emergency "kill switch": tells every bot-worker process to stop and
+   * close every browser it has open, then immediately marks every bot
+   * OFFLINE in the DB regardless of its previous status (including ERROR/
+   * already-OFFLINE ones the normal per-bot `stop()` guard would reject) -
+   * this is meant for "something is wrong, get every real-money session
+   * closed right now", not a routine per-bot stop.
+   */
+  async emergencyStopAll() {
+    await this.queueService.addJob(
+      QueueName.BOT_LIFECYCLE,
+      JobType.EMERGENCY_STOP_ALL,
+      {},
+      `emergency-stop-all-${Date.now()}`,
+    );
+
+    const { count } = await this.prisma.bot.updateMany({
+      data: { status: BotStatus.OFFLINE },
+    });
+
+    this.eventsService.emit('bot-command:emergency-stop-all', {} as Record<string, unknown>);
+
+    return {
+      success: true,
+      message: `Emergency stop broadcast to worker(s); ${count} bot(s) marked OFFLINE`,
+    };
+  }
 }

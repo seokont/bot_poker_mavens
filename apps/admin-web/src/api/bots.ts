@@ -58,4 +58,7 @@ export const botsApi = {
   bulkLeaveTable(botIds: string[]) {
     return apiClient.post('/bots/bulk/leave-table', { botIds });
   },
+  emergencyStopAll() {
+    return apiClient.post('/bots/emergency-stop-all');
+  },
 };
