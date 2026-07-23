@@ -195,6 +195,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
     buyIn?: number,
     login?: string,
     password?: string,
+    preferredSeat?: number | null,
   ): Promise<boolean> {
     let context = this.botContexts.get(botId);
 
@@ -248,31 +249,40 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       const page = context.page;
       console.log(`[Worker] joinTable: getting direct link for bot "${botId}" -> table "${tableId}"`);
 
-      // 1. Get direct table link from backend (internal API)
-      const response = await fetch(`${this.backendUrl}/api/v1/internal/bots/direct-link`, {
+      // 1. Get login-only link from backend (internal API) - auto-login via
+      // SessionKey, but no TableName/TableType so the bot lands in the
+      // lobby and opens the table itself via the lobby's HTML.
+      const response = await fetch(`${this.backendUrl}/api/v1/internal/bots/login-link`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Internal-Api-Key': this.internalApiKey,
         },
-        body: JSON.stringify({ botId, tableName: tableId }),
+        body: JSON.stringify({ botId }),
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`Failed to get direct link: ${response.status} ${errText}`);
+        throw new Error(`Failed to get login-only link: ${response.status} ${errText}`);
       }
 
-      const linkData = await response.json() as { url: string; params: Record<string, string> };
-      const directUrl: string = linkData.url;
+      const linkData = await response.json() as { url: string; sessionKey: string };
+      const loginUrl: string = linkData.url;
 
-      console.log(`[Worker] joinTable: direct link obtained, navigating to: ${directUrl}`);
+      console.log(`[Worker] joinTable: login-only link obtained, navigating to lobby: ${loginUrl}`);
 
-      // 2. Navigate directly to the table via the link (auto-login with SessionKey)
-      await page.goto(directUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      // 2. Navigate to the lobby via the link (auto-login with SessionKey)
+      await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(3000);
 
-      console.log(`[Worker] joinTable: navigated to table "${tableId}"`);
+      console.log(`[Worker] joinTable: navigated to lobby, opening table "${tableId}"`);
+
+      // 3. Open the target table from the lobby's own HTML table list
+      const tableOpened = await this.openTableFromLobby(page, tableId);
+      if (!tableOpened) {
+        throw new Error(`Could not find/open table "${tableId}" from the lobby`);
+      }
+      await page.waitForTimeout(3000);
 
       // Our own login is in the direct-link URL (`LoginName=...`) - resolved
       // once up front since it's used by the ground-truth check below both
@@ -301,7 +311,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       await this.dismissFullScreenPrompt(page);
 
       // Try to find and click any visible empty seat
-      const emptySeatClicked = await this.clickEmptySeat(page);
+      const emptySeatClicked = await this.clickEmptySeat(page, preferredSeat);
 
       if (emptySeatClicked) {
         console.log(`[Worker] joinTable: clicked empty seat`);
@@ -435,6 +445,63 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       await this.errorHandler.handleError(botId, error, context.page);
       this.stateMachine.setState(botId, BotState.ERROR);
       await this.reportStatus(botId, 'ERROR', { errorMessage: error.message });
+      return false;
+    }
+  }
+
+  // Finds the target table's row in the lobby's Ring Games grid (#RingGrid)
+  // by matching the name column against `tableId` (same string used
+  // previously as the direct-link TableName), then opens it.
+  //
+  // UNVERIFIED against the live site: double-click is a best-guess first
+  // implementation (typical grid-open convention). If this doesn't open the
+  // table, capture a debug snapshot at the lobby stage and inspect
+  // #RingGrid's real interaction (separate button, single click, etc.) -
+  // per this codebase's established live-iterate pattern, do not guess
+  // further blind.
+  private async openTableFromLobby(page: Page, tableId: string): Promise<boolean> {
+    try {
+      await page.waitForSelector('#RingGrid .grid_data', { timeout: 15000 }).catch(() => null);
+
+      const rowIndex: number = await page.evaluate((wantedName: string) => {
+        const doc = (globalThis as any).document;
+        const grid = doc.querySelector('#RingGrid .grid_data');
+        if (!grid) return -1;
+        // First column div holds the table-name cells, one per row, stacked
+        // as children - not one div per row.
+        const nameColumn = grid.children[0];
+        if (!nameColumn) return -1;
+        const cells = Array.from(nameColumn.children) as any[];
+        for (let i = 0; i < cells.length; i++) {
+          const text = (cells[i].textContent || '').trim();
+          if (text === wantedName) return i;
+        }
+        return -1;
+      }, tableId).catch(() => -1);
+
+      if (rowIndex < 0) {
+        console.warn(`[Worker] openTableFromLobby: table "${tableId}" not found in #RingGrid`);
+        return false;
+      }
+
+      const nameColumn = page.locator('#RingGrid .grid_data > div').first();
+      const cellLocator = nameColumn.locator('> *').nth(rowIndex);
+      await cellLocator.dblclick({ force: true, timeout: 5000 }).catch(async () => {
+        await page.evaluate((idx: number) => {
+          const doc = (globalThis as any).document;
+          const grid = doc.querySelector('#RingGrid .grid_data');
+          const nameCol = grid ? grid.children[0] : null;
+          const cell: any = nameCol ? nameCol.children[idx] : null;
+          if (cell) {
+            cell.dispatchEvent(new Event('dblclick', { bubbles: true }));
+          }
+        }, rowIndex);
+      });
+
+      console.log(`[Worker] openTableFromLobby: opened table "${tableId}" (row ${rowIndex})`);
+      return true;
+    } catch (err) {
+      console.warn(`[Worker] openTableFromLobby error:`, err);
       return false;
     }
   }
