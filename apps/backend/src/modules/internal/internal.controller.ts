@@ -230,6 +230,16 @@ export class InternalController {
     return this.internalService.generateDirectLink(body.botId, body.tableName);
   }
 
+  @Post('bots/login-link')
+  async generateLoginLink(
+    @Body()
+    body: {
+      botId: string;
+    },
+  ) {
+    return this.internalService.generateLoginOnlyLink(body.botId);
+  }
+
   @Post('pm-table-names')
   async getTableNames() {
     return this.internalService.getPmTableNames();

@@ -333,6 +333,26 @@ export class InternalService {
     return this.pokerMavensApi.generateDirectTableLink(bot.login, tableName);
   }
 
+  async generateLoginOnlyLink(botIdOrLogin: string) {
+    let bot = await this.prisma.bot.findUnique({
+      where: { id: botIdOrLogin },
+      select: { login: true },
+    });
+
+    if (!bot) {
+      bot = await this.prisma.bot.findUnique({
+        where: { login: botIdOrLogin },
+        select: { login: true },
+      });
+    }
+
+    if (!bot) {
+      throw new NotFoundException(`Bot with ID or login "${botIdOrLogin}" not found`);
+    }
+
+    return this.pokerMavensApi.generateLoginOnlyLink(bot.login);
+  }
+
   async getPmTableNames() {
     const tables = await this.pokerMavensApi.fetchTables();
     return tables.map(t => ({ name: t.name, gameType: t.gameType, limitType: t.limitType }));
