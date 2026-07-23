@@ -33,6 +33,7 @@ interface JobData {
   handId?: string;
   turnId?: string;
   action?: string;
+  preferredSeat?: number | null;
 }
 
 @Injectable()
@@ -1439,7 +1440,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
           await this.stopBot(botId!);
           break;
         case 'joinTable':
-          await this.joinTable(botId!, job.tableId!, job.buyIn, job.login, job.password);
+          await this.joinTable(botId!, job.tableId!, job.buyIn, job.login, job.password, job.preferredSeat);
           break;
         case 'leaveTable':
           await this.leaveTable(botId!);
