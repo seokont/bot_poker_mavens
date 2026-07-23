@@ -28,6 +28,11 @@
             </v-btn>
           </v-col>
           <v-col cols="auto">
+            <v-btn color="primary" variant="tonal" prepend-icon="mdi-shuffle-variant" @click="showBulkJoinDialog = true">
+              Join Table (Random Order)
+            </v-btn>
+          </v-col>
+          <v-col cols="auto">
             <v-btn color="error" variant="elevated" prepend-icon="mdi-alert-octagon" @click="showEmergencyDialog = true">
               🚨 Emergency Stop All Bots
             </v-btn>
@@ -35,6 +40,7 @@
         </v-row>
       </v-card-title>
       <v-data-table-server
+        v-model="selected"
         v-model:items-per-page="itemsPerPage"
         :headers="headers"
         :items="bots"
@@ -118,6 +124,31 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="showBulkJoinDialog" max-width="480">
+      <v-card>
+        <v-card-title>Join Table (Random Order)</v-card-title>
+        <v-card-text>
+          Seats the {{ selected.length }} selected bot(s) at the given table in a shuffled order, with a random
+          4-25s pause between each one - looks like separate players sitting down over time instead of a bot
+          script joining them all in a row.
+          <v-text-field v-model="bulkJoinTableId" label="Table ID (external table name)" class="mt-4"></v-text-field>
+          <v-text-field v-model.number="bulkJoinBuyIn" label="Buy In" type="number" min="1"></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="showBulkJoinDialog = false">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!selected.length || !bulkJoinTableId || !bulkJoinBuyIn"
+            :loading="bulkJoining"
+            @click="bulkJoinTable"
+          >
+            Seat Them Randomly
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="showEmergencyDialog" max-width="480">
       <v-card>
         <v-card-title class="text-error">🚨 Emergency Stop All Bots</v-card-title>
@@ -176,6 +207,11 @@ const deletingBot = ref<any>(null);
 
 const showEmergencyDialog = ref(false);
 const emergencyStopping = ref(false);
+
+const showBulkJoinDialog = ref(false);
+const bulkJoinTableId = ref('');
+const bulkJoinBuyIn = ref(1000);
+const bulkJoining = ref(false);
 
 const showAddBalanceDialog = ref(false);
 const addBalanceBot = ref<any>(null);
@@ -351,6 +387,24 @@ async function bulkStop() {
     snackbar.show = true;
     snackbar.message = 'Failed to bulk stop';
     snackbar.color = 'error';
+  }
+}
+
+async function bulkJoinTable() {
+  if (!selected.value.length || !bulkJoinTableId.value || !bulkJoinBuyIn.value) return;
+  bulkJoining.value = true;
+  try {
+    const response = await botsApi.bulkJoinTable(selected.value, bulkJoinTableId.value, bulkJoinBuyIn.value);
+    snackbar.show = true;
+    snackbar.message = response.data?.message || 'Randomized join sequence started';
+    snackbar.color = 'success';
+    showBulkJoinDialog.value = false;
+  } catch (err: any) {
+    snackbar.show = true;
+    snackbar.message = err.response?.data?.message || 'Failed to start bulk join';
+    snackbar.color = 'error';
+  } finally {
+    bulkJoining.value = false;
   }
 }
 
