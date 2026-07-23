@@ -271,6 +271,14 @@
             label="Table"
             density="compact"
           ></v-select>
+          <v-select
+            v-model="preferredSeat"
+            :items="[{ label: 'Any empty seat', value: null }, ...Array.from({ length: selectedTableMaxPlayers }, (_, i) => ({ label: `Seat ${i + 1}`, value: i + 1 }))]"
+            item-title="label"
+            item-value="value"
+            label="Seat"
+            density="compact"
+          ></v-select>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -284,7 +292,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { botsApi } from '../../api/bots';
 import { tablesApi } from '../../api/tables';
@@ -329,8 +337,14 @@ async function loadLiveState() {
 
 const showJoinTableDialog = ref(false);
 const selectedTableName = ref<string | null>(null);
+const preferredSeat = ref<number | null>(null);
 
 const tables = ref<any[]>([]);
+
+const selectedTableMaxPlayers = computed(() => {
+  const table = tables.value.find((t) => t.name === selectedTableName.value);
+  return table?.maxPlayers || 9;
+});
 
 function statusColor(status: string): string {
   const colors: Record<string, string> = {
@@ -532,7 +546,11 @@ async function joinTable() {
   if (!selectedTableName.value) return;
   actionLoading.value = true;
   try {
-    await botsApi.joinTable(bot.value.id, { tableId: selectedTableName.value, buyIn: bot.value.defaultBuyIn || 1000 });
+    await botsApi.joinTable(bot.value.id, {
+      tableId: selectedTableName.value,
+      buyIn: bot.value.defaultBuyIn || 1000,
+      preferredSeat: preferredSeat.value,
+    });
     showJoinTableDialog.value = false;
     await loadBot();
   } catch (err: any) {
