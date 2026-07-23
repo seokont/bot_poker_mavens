@@ -248,7 +248,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       this.stateMachine.setState(botId, BotState.OPENING_TABLE);
 
       const page = context.page;
-      console.log(`[Worker] joinTable: getting direct link for bot "${botId}" -> table "${tableId}"`);
+      console.log(`[Worker] joinTable: getting login-only link for bot "${botId}" -> table "${tableId}"`);
 
       // 1. Get login-only link from backend (internal API) - auto-login via
       // SessionKey, but no TableName/TableType so the bot lands in the
@@ -279,7 +279,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       console.log(`[Worker] joinTable: navigated to lobby, opening table "${tableId}"`);
 
       // 3. Open the target table from the lobby's own HTML table list
-      const tableOpened = await this.openTableFromLobby(page, tableId);
+      const tableOpened = await this.openTableFromLobby(page, tableId, botId);
       if (!tableOpened) {
         throw new Error(`Could not find/open table "${tableId}" from the lobby`);
       }
@@ -460,9 +460,46 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
   // #RingGrid's real interaction (separate button, single click, etc.) -
   // per this codebase's established live-iterate pattern, do not guess
   // further blind.
-  private async openTableFromLobby(page: Page, tableId: string): Promise<boolean> {
+  private async openTableFromLobby(page: Page, tableId: string, botId: string): Promise<boolean> {
     try {
       await page.waitForSelector('#RingGrid .grid_data', { timeout: 15000 }).catch(() => null);
+
+      // Confirmed live via a debug snapshot (2026-07-23): #RingGrid's own
+      // wrapper div is `visibility: hidden` by default - the lobby lands on
+      // the "Connected Players" tab (#LoginGrid), not "Cash Games", and
+      // double-clicking a row inside a hidden panel is a silent no-op (the
+      // click never reaches real page content). The lobby's tab widget is a
+      // plain <li> list under #LobbyTabs with no id/data attribute per tab,
+      // so match by the Hebrew label's stable prefix "משחקי קאש" (Cash
+      // Games) rather than position, since the trailing ": N" live count
+      // changes constantly. Click it to activate the Cash Games panel
+      // before touching any RingGrid row.
+      await this.dismissFullScreenPrompt(page);
+
+      // A synthetic `el.click()` on the tab <li> (JS-dispatched, isTrusted:
+      // false) was confirmed live to be unreliable - it activated the tab
+      // in one run and silently did nothing in another, with no error
+      // either way. Use a real Playwright click instead (same rationale as
+      // clickEmptySeat's real-mouse-click preference elsewhere in this
+      // file), and confirm the switch actually happened by checking
+      // #RingGrid's own wrapper visibility rather than assuming a fixed
+      // wait is enough.
+      const cashGamesTab = page.locator('#LobbyTabs > ul > li', { hasText: 'משחקי קאש' }).first();
+      await cashGamesTab.click({ timeout: 5000 }).catch((err) => {
+        console.warn(`[Worker] openTableFromLobby: failed to click "Cash Games" lobby tab:`, err);
+      });
+
+      const ringGridVisible = await page.waitForFunction(() => {
+        const doc = (globalThis as any).document;
+        const grid = doc.querySelector('#RingGrid');
+        if (!grid) return false;
+        const wrapper = grid.parentElement;
+        return wrapper && (globalThis as any).getComputedStyle(wrapper).visibility === 'visible';
+      }, { timeout: 5000 }).catch(() => null);
+
+      if (!ringGridVisible) {
+        console.warn(`[Worker] openTableFromLobby: #RingGrid still not visible after clicking "Cash Games" tab`);
+      }
 
       const rowIndex: number = await page.evaluate((wantedName: string) => {
         const doc = (globalThis as any).document;
@@ -485,29 +522,67 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
         return false;
       }
 
+      // Confirmed live via a debug snapshot (2026-07-23): this is a
+      // select-then-open grid, not a double-click-to-open one. A single
+      // click on the row selects it (the "#RingSelected" status line below
+      // the grid switches from "לא נבחר משחק קאש" / "no cash game selected"
+      // to the table's name), and a separate "#RingObserveBtn" button
+      // ("צפייה בשולחן" / View Table) actually opens the table window - a
+      // double-click on the row alone does neither.
       const nameColumn = page.locator('#RingGrid .grid_data > div').first();
       const cellLocator = nameColumn.locator('> *').nth(rowIndex);
-      await cellLocator.dblclick({ force: true, timeout: 5000 }).catch(async () => {
+      await cellLocator.click({ force: true, timeout: 5000 }).catch(async () => {
         await page.evaluate((idx: number) => {
           const doc = (globalThis as any).document;
           const grid = doc.querySelector('#RingGrid .grid_data');
           const nameCol = grid ? grid.children[0] : null;
           const cell: any = nameCol ? nameCol.children[idx] : null;
           if (cell) {
-            cell.dispatchEvent(new Event('dblclick', { bubbles: true }));
+            cell.dispatchEvent(new Event('click', { bubbles: true }));
           }
         }, rowIndex);
       });
 
-      // The dblclick above (and its synthetic-event fallback) is a
-      // best-guess interaction never verified against the live site - it
-      // can silently do nothing (e.g. if the row layout changes). Don't
-      // report success just because we found and clicked the row; wait for
-      // evidence the table view actually rendered, so a click that landed
-      // on nothing surfaces here as a clean, immediately debuggable
+      await page.waitForTimeout(300);
+      const ringSelectedText = await page.evaluate(() => {
+        const doc = (globalThis as any).document;
+        const el = doc.querySelector('#RingSelected');
+        return el ? (el.textContent || '').trim() : null;
+      }).catch(() => null);
+      console.log(`[Worker] openTableFromLobby: after row-select click, #RingSelected = "${ringSelectedText}"`);
+      await this.captureDebugSnapshot(page, botId, 'lobby-after-row-select');
+
+      await page.locator('#RingObserveBtn button').click({ force: true, timeout: 5000 }).catch(async () => {
+        await page.evaluate(() => {
+          const doc = (globalThis as any).document;
+          const btn: any = doc.querySelector('#RingObserveBtn button');
+          if (btn) btn.click();
+        });
+      });
+      await page.waitForTimeout(300);
+      await this.captureDebugSnapshot(page, botId, 'lobby-after-observe-click');
+
+      // Row-select + button-click above is a best-guess interaction
+      // confirmed only against a single live snapshot - it can still
+      // silently do nothing (e.g. if the row wasn't actually selected).
+      // Don't report success just because both clicks were dispatched; wait
+      // for evidence the table view actually rendered, so a click that
+      // landed on nothing surfaces here as a clean, immediately debuggable
       // `joinTable` throw instead of confusingly failing downstream at
       // clickEmptySeat/buy-in on what is still the lobby page.
-      const tableRendered = await page.waitForSelector('.sp_seat', { timeout: 8000 }).catch(() => null);
+      //
+      // Confirmed live via a debug snapshot (2026-07-23): `.sp_seat` is
+      // always nested inside a `.seatplate hide` wrapper (the same "bare
+      // .hide instead of a reliable .seatplate state" already documented on
+      // clickEmptySeat below) - a plain `waitForSelector(..., {state:
+      // 'visible'})` never resolves even once the table has fully rendered,
+      // because the element's own ancestor is `display: none`. Match
+      // clickEmptySeat's own approach instead: check for the elements'
+      // existence in the DOM via `querySelectorAll`, not CSS visibility.
+      const tableRendered = await page.waitForFunction(() => {
+        const doc = (globalThis as any).document;
+        return doc.querySelectorAll('.sp_seat').length > 0;
+      }, { timeout: 8000 }).catch(() => null);
       if (!tableRendered) {
         console.warn(`[Worker] openTableFromLobby: clicked row ${rowIndex} for table "${tableId}" but the table view never rendered (.sp_seat not found)`);
         return false;
