@@ -28,7 +28,7 @@ export const botsApi = {
   restart(id: string) {
     return apiClient.post(`/bots/${id}/restart`);
   },
-  joinTable(id: string, data: { tableId: string; buyIn: number }) {
+  joinTable(id: string, data: { tableId: string; buyIn: number; preferredSeat?: number | null }) {
     return apiClient.post(`/bots/${id}/join-table`, data);
   },
   leaveTable(id: string) {
@@ -52,8 +52,8 @@ export const botsApi = {
   bulkStop(botIds: string[]) {
     return apiClient.post('/bots/bulk/stop', { botIds });
   },
-  bulkJoinTable(botIds: string[], tableId: string, buyIn: number) {
-    return apiClient.post('/bots/bulk/join-table', { botIds, tableId, buyIn });
+  bulkJoinTable(botIds: string[], tableId: string, buyIn: number, preferredSeat?: number | null) {
+    return apiClient.post('/bots/bulk/join-table', { botIds, tableId, buyIn, preferredSeat });
   },
   bulkLeaveTable(botIds: string[]) {
     return apiClient.post('/bots/bulk/leave-table', { botIds });

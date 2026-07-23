@@ -109,6 +109,8 @@ export class QueueService implements OnModuleDestroy {
       handId: data.handId || null,
       turnId: data.turnId || null,
       action: data.action || null,
+      preferredSeat: data.preferredSeat ?? null,
+      waitForBigBlind: data.waitForBigBlind ?? null,
     });
     console.log(`[QueueService] Pushing to Redis list 'bot-commands': ${workerMsg.substring(0, 200)}`);
 

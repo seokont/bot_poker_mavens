@@ -33,6 +33,7 @@ interface JobData {
   handId?: string;
   turnId?: string;
   action?: string;
+  preferredSeat?: number | null;
 }
 
 @Injectable()
@@ -195,6 +196,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
     buyIn?: number,
     login?: string,
     password?: string,
+    preferredSeat?: number | null,
   ): Promise<boolean> {
     let context = this.botContexts.get(botId);
 
@@ -248,31 +250,40 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       const page = context.page;
       console.log(`[Worker] joinTable: getting direct link for bot "${botId}" -> table "${tableId}"`);
 
-      // 1. Get direct table link from backend (internal API)
-      const response = await fetch(`${this.backendUrl}/api/v1/internal/bots/direct-link`, {
+      // 1. Get login-only link from backend (internal API) - auto-login via
+      // SessionKey, but no TableName/TableType so the bot lands in the
+      // lobby and opens the table itself via the lobby's HTML.
+      const response = await fetch(`${this.backendUrl}/api/v1/internal/bots/login-link`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Internal-Api-Key': this.internalApiKey,
         },
-        body: JSON.stringify({ botId, tableName: tableId }),
+        body: JSON.stringify({ botId }),
       });
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`Failed to get direct link: ${response.status} ${errText}`);
+        throw new Error(`Failed to get login-only link: ${response.status} ${errText}`);
       }
 
-      const linkData = await response.json() as { url: string; params: Record<string, string> };
-      const directUrl: string = linkData.url;
+      const linkData = await response.json() as { url: string; sessionKey: string };
+      const loginUrl: string = linkData.url;
 
-      console.log(`[Worker] joinTable: direct link obtained, navigating to: ${directUrl}`);
+      console.log(`[Worker] joinTable: login-only link obtained, navigating to lobby: ${loginUrl}`);
 
-      // 2. Navigate directly to the table via the link (auto-login with SessionKey)
-      await page.goto(directUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      // 2. Navigate to the lobby via the link (auto-login with SessionKey)
+      await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(3000);
 
-      console.log(`[Worker] joinTable: navigated to table "${tableId}"`);
+      console.log(`[Worker] joinTable: navigated to lobby, opening table "${tableId}"`);
+
+      // 3. Open the target table from the lobby's own HTML table list
+      const tableOpened = await this.openTableFromLobby(page, tableId);
+      if (!tableOpened) {
+        throw new Error(`Could not find/open table "${tableId}" from the lobby`);
+      }
+      await page.waitForTimeout(3000);
 
       // Our own login is in the direct-link URL (`LoginName=...`) - resolved
       // once up front since it's used by the ground-truth check below both
@@ -301,7 +312,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       await this.dismissFullScreenPrompt(page);
 
       // Try to find and click any visible empty seat
-      const emptySeatClicked = await this.clickEmptySeat(page);
+      const emptySeatClicked = await this.clickEmptySeat(page, preferredSeat);
 
       if (emptySeatClicked) {
         console.log(`[Worker] joinTable: clicked empty seat`);
@@ -435,6 +446,77 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       await this.errorHandler.handleError(botId, error, context.page);
       this.stateMachine.setState(botId, BotState.ERROR);
       await this.reportStatus(botId, 'ERROR', { errorMessage: error.message });
+      return false;
+    }
+  }
+
+  // Finds the target table's row in the lobby's Ring Games grid (#RingGrid)
+  // by matching the name column against `tableId` (same string used
+  // previously as the direct-link TableName), then opens it.
+  //
+  // UNVERIFIED against the live site: double-click is a best-guess first
+  // implementation (typical grid-open convention). If this doesn't open the
+  // table, capture a debug snapshot at the lobby stage and inspect
+  // #RingGrid's real interaction (separate button, single click, etc.) -
+  // per this codebase's established live-iterate pattern, do not guess
+  // further blind.
+  private async openTableFromLobby(page: Page, tableId: string): Promise<boolean> {
+    try {
+      await page.waitForSelector('#RingGrid .grid_data', { timeout: 15000 }).catch(() => null);
+
+      const rowIndex: number = await page.evaluate((wantedName: string) => {
+        const doc = (globalThis as any).document;
+        const grid = doc.querySelector('#RingGrid .grid_data');
+        if (!grid) return -1;
+        // First column div holds the table-name cells, one per row, stacked
+        // as children - not one div per row.
+        const nameColumn = grid.children[0];
+        if (!nameColumn) return -1;
+        const cells = Array.from(nameColumn.children) as any[];
+        for (let i = 0; i < cells.length; i++) {
+          const text = (cells[i].textContent || '').trim();
+          if (text === wantedName) return i;
+        }
+        return -1;
+      }, tableId).catch(() => -1);
+
+      if (rowIndex < 0) {
+        console.warn(`[Worker] openTableFromLobby: table "${tableId}" not found in #RingGrid`);
+        return false;
+      }
+
+      const nameColumn = page.locator('#RingGrid .grid_data > div').first();
+      const cellLocator = nameColumn.locator('> *').nth(rowIndex);
+      await cellLocator.dblclick({ force: true, timeout: 5000 }).catch(async () => {
+        await page.evaluate((idx: number) => {
+          const doc = (globalThis as any).document;
+          const grid = doc.querySelector('#RingGrid .grid_data');
+          const nameCol = grid ? grid.children[0] : null;
+          const cell: any = nameCol ? nameCol.children[idx] : null;
+          if (cell) {
+            cell.dispatchEvent(new Event('dblclick', { bubbles: true }));
+          }
+        }, rowIndex);
+      });
+
+      // The dblclick above (and its synthetic-event fallback) is a
+      // best-guess interaction never verified against the live site - it
+      // can silently do nothing (e.g. if the row layout changes). Don't
+      // report success just because we found and clicked the row; wait for
+      // evidence the table view actually rendered, so a click that landed
+      // on nothing surfaces here as a clean, immediately debuggable
+      // `joinTable` throw instead of confusingly failing downstream at
+      // clickEmptySeat/buy-in on what is still the lobby page.
+      const tableRendered = await page.waitForSelector('.sp_seat', { timeout: 8000 }).catch(() => null);
+      if (!tableRendered) {
+        console.warn(`[Worker] openTableFromLobby: clicked row ${rowIndex} for table "${tableId}" but the table view never rendered (.sp_seat not found)`);
+        return false;
+      }
+
+      console.log(`[Worker] openTableFromLobby: opened table "${tableId}" (row ${rowIndex})`);
+      return true;
+    } catch (err) {
+      console.warn(`[Worker] openTableFromLobby error:`, err);
       return false;
     }
   }
@@ -702,7 +784,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async clickEmptySeat(page: Page): Promise<boolean> {
+  private async clickEmptySeat(page: Page, preferredSeat?: number | null): Promise<boolean> {
     try {
       // `.sp_seat` (the clickable seat area) exists for EVERY seat position,
       // occupied or not - Poker Mavens uses it both to open the buy-in
@@ -727,19 +809,58 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       // sensitive action a site might gate on genuine user input, so
       // clicking through Playwright (which drives real OS/CDP mouse events)
       // is the more robust choice here.
-      const targetIndex: number = await page.evaluate(() => {
-        const doc = (globalThis as any).document;
-        const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
-        for (let i = 0; i < seatEls.length; i++) {
-          const seatEl: any = seatEls[i];
-          const parent = seatEl.parentElement;
-          const nameEl = parent ? parent.querySelector('.sp_name') : null;
-          const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
-          if (occupied) continue;
-          if (seatEl.offsetParent !== null) return i;
+      //
+      // When a specific seat number is requested, resolve it via each
+      // seat's `.tooltip` sibling text (e.g. "מושב #3" / "Seat #3" -
+      // confirmed live in an earlier debug capture) instead of DOM order.
+      // UNVERIFIED for every seat position - if a requested seat is never
+      // matched despite being visibly empty, capture a debug snapshot and
+      // inspect the real `.tooltip` text for that position.
+      let targetIndex = -1;
+      if (preferredSeat != null) {
+        targetIndex = await page.evaluate((wantedSeat: number) => {
+          const doc = (globalThis as any).document;
+          const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
+          for (let i = 0; i < seatEls.length; i++) {
+            const seatEl: any = seatEls[i];
+            const parent = seatEl.parentElement;
+            const nameEl = parent ? parent.querySelector('.sp_name') : null;
+            const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
+            if (occupied) continue;
+            if (seatEl.offsetParent === null) continue;
+            // Scope the `.tooltip` lookup to this seat's own parent (the
+            // same DOM neighborhood already used for `.sp_name` above)
+            // rather than pairing by global-array index, which silently
+            // mismatches the moment any non-seat `.tooltip` exists on the
+            // page or the two NodeLists fall out of sync.
+            const tooltipEl: any = parent ? parent.querySelector('.tooltip') : null;
+            const tooltipText = tooltipEl ? (tooltipEl.textContent || '') : '';
+            const match = tooltipText.match(/(\d+)/);
+            if (match && parseInt(match[1], 10) === wantedSeat) return i;
+          }
+          return -1;
+        }, preferredSeat).catch(() => -1);
+
+        if (targetIndex < 0) {
+          console.log(`[Worker] clickEmptySeat: preferred seat ${preferredSeat} not resolvable/unoccupied, falling back to first empty seat`);
         }
-        return -1;
-      }).catch(() => -1);
+      }
+
+      if (targetIndex < 0) {
+        targetIndex = await page.evaluate(() => {
+          const doc = (globalThis as any).document;
+          const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
+          for (let i = 0; i < seatEls.length; i++) {
+            const seatEl: any = seatEls[i];
+            const parent = seatEl.parentElement;
+            const nameEl = parent ? parent.querySelector('.sp_name') : null;
+            const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
+            if (occupied) continue;
+            if (seatEl.offsetParent !== null) return i;
+          }
+          return -1;
+        }).catch(() => -1);
+      }
 
       if (targetIndex >= 0) {
         const seatLocator = page.locator('.sp_seat').nth(targetIndex);
@@ -1337,7 +1458,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
           await this.stopBot(botId!);
           break;
         case 'joinTable':
-          await this.joinTable(botId!, job.tableId!, job.buyIn, job.login, job.password);
+          await this.joinTable(botId!, job.tableId!, job.buyIn, job.login, job.password, job.preferredSeat);
           break;
         case 'leaveTable':
           await this.leaveTable(botId!);
