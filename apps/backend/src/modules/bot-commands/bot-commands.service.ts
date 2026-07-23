@@ -266,6 +266,50 @@ export class BotCommandsService {
     return { success: true, results };
   }
 
+  // Joining in listed order, back-to-back, is a dead giveaway of automation -
+  // real players don't all sit down within milliseconds of each other in ID
+  // order. Shuffle the join order and stagger each subsequent join behind a
+  // random human-scale delay instead.
+  private static readonly BULK_JOIN_MIN_DELAY_MS = 4_000;
+  private static readonly BULK_JOIN_MAX_DELAY_MS = 25_000;
+
+  private shuffle<T>(items: T[]): T[] {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async runStaggeredJoins(
+    botIds: string[],
+    tableId: string,
+    buyIn: number,
+    preferredSeat?: number | null,
+    waitForBigBlind?: boolean,
+  ): Promise<void> {
+    for (let i = 0; i < botIds.length; i++) {
+      if (i > 0) {
+        const delay =
+          BotCommandsService.BULK_JOIN_MIN_DELAY_MS +
+          Math.random() *
+            (BotCommandsService.BULK_JOIN_MAX_DELAY_MS - BotCommandsService.BULK_JOIN_MIN_DELAY_MS);
+        await this.sleep(delay);
+      }
+      try {
+        await this.joinTable(botIds[i], tableId, buyIn, preferredSeat, waitForBigBlind);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[BotCommandsService] staggered join failed for bot ${botIds[i]}: ${message}`);
+      }
+    }
+  }
+
   async bulkJoinTable(
     botIds: string[],
     tableId: string,
@@ -273,26 +317,18 @@ export class BotCommandsService {
     preferredSeat?: number | null,
     waitForBigBlind?: boolean,
   ) {
-    const results = [];
+    const shuffled = this.shuffle(botIds);
 
-    for (const botId of botIds) {
-      try {
-        const result = await this.joinTable(
-          botId,
-          tableId,
-          buyIn,
-          preferredSeat,
-          waitForBigBlind,
-        );
-        results.push({ botId, success: true, message: result.message });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unknown error';
-        results.push({ botId, success: false, message });
-      }
-    }
+    // Fire-and-forget: the staggered delays can add up to minutes for many
+    // bots, so this must not block the HTTP request - awaiting it here would
+    // hold the admin UI's request open for as long as the whole sequence
+    // takes instead of returning immediately.
+    void this.runStaggeredJoins(shuffled, tableId, buyIn, preferredSeat, waitForBigBlind);
 
-    return { success: true, results };
+    return {
+      success: true,
+      message: `Join-table scheduled for ${shuffled.length} bot(s) in randomized order with staggered delays`,
+    };
   }
 
   async bulkLeaveTable(botIds: string[]) {
