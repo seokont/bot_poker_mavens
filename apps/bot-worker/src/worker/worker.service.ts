@@ -1403,9 +1403,20 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
         );
         await this.dismissNoticeDialogs(page);
         const minFallback = await firstVisible(page.getByText('מינימלי', { exact: false }));
+        console.log(`[Worker] performBuyIn: diagnostic - minFallback found: ${!!minFallback}`);
         if (minFallback) {
           await minFallback.click().catch(() => {});
+          await page.waitForTimeout(300);
           const confirmButton2 = await firstVisible(page.getByText(confirmExact));
+          console.log(`[Worker] performBuyIn: diagnostic - confirmButton2 found: ${!!confirmButton2}`);
+          if (!confirmButton2) {
+            const anyConfirmCount = await page.getByText(confirmExact).count().catch(() => -1);
+            const anyConfirmVisibleFlags: boolean[] = [];
+            for (let i = 0; i < Math.max(anyConfirmCount, 0); i++) {
+              anyConfirmVisibleFlags.push(await page.getByText(confirmExact).nth(i).isVisible().catch(() => false));
+            }
+            console.log(`[Worker] performBuyIn: diagnostic - confirmExact total matches: ${anyConfirmCount}, visible flags: ${JSON.stringify(anyConfirmVisibleFlags)}`);
+          }
           if (confirmButton2) {
             await confirmButton2.click().catch(() => {});
             console.log(`[Worker] performBuyIn: re-confirmed with minimum preset amount`);
