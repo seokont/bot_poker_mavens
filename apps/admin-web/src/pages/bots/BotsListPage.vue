@@ -133,6 +133,13 @@
           script joining them all in a row.
           <v-text-field v-model="bulkJoinTableId" label="Table ID (external table name)" class="mt-4"></v-text-field>
           <v-text-field v-model.number="bulkJoinBuyIn" label="Buy In" type="number" min="1"></v-text-field>
+          <v-text-field
+            v-model.number="bulkJoinPreferredSeat"
+            label="Preferred seat number (optional - each bot falls back to any empty seat)"
+            type="number"
+            min="1"
+            clearable
+          ></v-text-field>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -211,6 +218,7 @@ const emergencyStopping = ref(false);
 const showBulkJoinDialog = ref(false);
 const bulkJoinTableId = ref('');
 const bulkJoinBuyIn = ref(1000);
+const bulkJoinPreferredSeat = ref<number | null>(null);
 const bulkJoining = ref(false);
 
 const showAddBalanceDialog = ref(false);
@@ -394,7 +402,12 @@ async function bulkJoinTable() {
   if (!selected.value.length || !bulkJoinTableId.value || !bulkJoinBuyIn.value) return;
   bulkJoining.value = true;
   try {
-    const response = await botsApi.bulkJoinTable(selected.value, bulkJoinTableId.value, bulkJoinBuyIn.value);
+    const response = await botsApi.bulkJoinTable(
+      selected.value,
+      bulkJoinTableId.value,
+      bulkJoinBuyIn.value,
+      bulkJoinPreferredSeat.value,
+    );
     snackbar.show = true;
     snackbar.message = response.data?.message || 'Randomized join sequence started';
     snackbar.color = 'success';
