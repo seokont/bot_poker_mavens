@@ -499,6 +499,20 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
         }, rowIndex);
       });
 
+      // The dblclick above (and its synthetic-event fallback) is a
+      // best-guess interaction never verified against the live site - it
+      // can silently do nothing (e.g. if the row layout changes). Don't
+      // report success just because we found and clicked the row; wait for
+      // evidence the table view actually rendered, so a click that landed
+      // on nothing surfaces here as a clean, immediately debuggable
+      // `joinTable` throw instead of confusingly failing downstream at
+      // clickEmptySeat/buy-in on what is still the lobby page.
+      const tableRendered = await page.waitForSelector('.sp_seat', { timeout: 8000 }).catch(() => null);
+      if (!tableRendered) {
+        console.warn(`[Worker] openTableFromLobby: clicked row ${rowIndex} for table "${tableId}" but the table view never rendered (.sp_seat not found)`);
+        return false;
+      }
+
       console.log(`[Worker] openTableFromLobby: opened table "${tableId}" (row ${rowIndex})`);
       return true;
     } catch (err) {
@@ -807,7 +821,6 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
         targetIndex = await page.evaluate((wantedSeat: number) => {
           const doc = (globalThis as any).document;
           const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
-          const tooltipEls = Array.from(doc.querySelectorAll('.tooltip'));
           for (let i = 0; i < seatEls.length; i++) {
             const seatEl: any = seatEls[i];
             const parent = seatEl.parentElement;
@@ -815,7 +828,12 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
             const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
             if (occupied) continue;
             if (seatEl.offsetParent === null) continue;
-            const tooltipEl: any = tooltipEls[i];
+            // Scope the `.tooltip` lookup to this seat's own parent (the
+            // same DOM neighborhood already used for `.sp_name` above)
+            // rather than pairing by global-array index, which silently
+            // mismatches the moment any non-seat `.tooltip` exists on the
+            // page or the two NodeLists fall out of sync.
+            const tooltipEl: any = parent ? parent.querySelector('.tooltip') : null;
             const tooltipText = tooltipEl ? (tooltipEl.textContent || '') : '';
             const match = tooltipText.match(/(\d+)/);
             if (match && parseInt(match[1], 10) === wantedSeat) return i;
