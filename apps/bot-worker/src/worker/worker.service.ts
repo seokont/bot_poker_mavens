@@ -702,7 +702,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async clickEmptySeat(page: Page): Promise<boolean> {
+  private async clickEmptySeat(page: Page, preferredSeat?: number | null): Promise<boolean> {
     try {
       // `.sp_seat` (the clickable seat area) exists for EVERY seat position,
       // occupied or not - Poker Mavens uses it both to open the buy-in
@@ -727,19 +727,54 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       // sensitive action a site might gate on genuine user input, so
       // clicking through Playwright (which drives real OS/CDP mouse events)
       // is the more robust choice here.
-      const targetIndex: number = await page.evaluate(() => {
-        const doc = (globalThis as any).document;
-        const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
-        for (let i = 0; i < seatEls.length; i++) {
-          const seatEl: any = seatEls[i];
-          const parent = seatEl.parentElement;
-          const nameEl = parent ? parent.querySelector('.sp_name') : null;
-          const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
-          if (occupied) continue;
-          if (seatEl.offsetParent !== null) return i;
+      //
+      // When a specific seat number is requested, resolve it via each
+      // seat's `.tooltip` sibling text (e.g. "מושב #3" / "Seat #3" -
+      // confirmed live in an earlier debug capture) instead of DOM order.
+      // UNVERIFIED for every seat position - if a requested seat is never
+      // matched despite being visibly empty, capture a debug snapshot and
+      // inspect the real `.tooltip` text for that position.
+      let targetIndex = -1;
+      if (preferredSeat != null) {
+        targetIndex = await page.evaluate((wantedSeat: number) => {
+          const doc = (globalThis as any).document;
+          const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
+          const tooltipEls = Array.from(doc.querySelectorAll('.tooltip'));
+          for (let i = 0; i < seatEls.length; i++) {
+            const seatEl: any = seatEls[i];
+            const parent = seatEl.parentElement;
+            const nameEl = parent ? parent.querySelector('.sp_name') : null;
+            const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
+            if (occupied) continue;
+            if (seatEl.offsetParent === null) continue;
+            const tooltipEl: any = tooltipEls[i];
+            const tooltipText = tooltipEl ? (tooltipEl.textContent || '') : '';
+            const match = tooltipText.match(/(\d+)/);
+            if (match && parseInt(match[1], 10) === wantedSeat) return i;
+          }
+          return -1;
+        }, preferredSeat).catch(() => -1);
+
+        if (targetIndex < 0) {
+          console.log(`[Worker] clickEmptySeat: preferred seat ${preferredSeat} not resolvable/unoccupied, falling back to first empty seat`);
         }
-        return -1;
-      }).catch(() => -1);
+      }
+
+      if (targetIndex < 0) {
+        targetIndex = await page.evaluate(() => {
+          const doc = (globalThis as any).document;
+          const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
+          for (let i = 0; i < seatEls.length; i++) {
+            const seatEl: any = seatEls[i];
+            const parent = seatEl.parentElement;
+            const nameEl = parent ? parent.querySelector('.sp_name') : null;
+            const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
+            if (occupied) continue;
+            if (seatEl.offsetParent !== null) return i;
+          }
+          return -1;
+        }).catch(() => -1);
+      }
 
       if (targetIndex >= 0) {
         const seatLocator = page.locator('.sp_seat').nth(targetIndex);
