@@ -314,4 +314,20 @@ export class PokerMavensApiService {
 
     return { url, params };
   }
+
+  /**
+   * Generate a login-only URL (no TableName/TableType) - the bot lands in
+   * the lobby, auto-logged-in, and opens a specific table itself via the
+   * lobby's own HTML instead of jumping straight there.
+   * https://site.com/?LoginName={nickname}&SessionKey={key}
+   */
+  async generateLoginOnlyLink(nickname: string): Promise<{ url: string; sessionKey: string }> {
+    const sessionKey = await this.getSessionKey(nickname);
+    const baseUrl = this.siteUrl.replace(/\/+$/, '');
+    const url = `${baseUrl}/?LoginName=${encodeURIComponent(nickname)}&SessionKey=${sessionKey}`;
+
+    this.logger.log(`Generated login-only link for "${nickname}"`);
+
+    return { url, sessionKey };
+  }
 }
