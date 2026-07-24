@@ -885,35 +885,31 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       // clicking through Playwright (which drives real OS/CDP mouse events)
       // is the more robust choice here.
       //
-      // When a specific seat number is requested, resolve it via each
-      // seat's `.tooltip` sibling text (e.g. "מושב #3" / "Seat #3" -
-      // confirmed live in an earlier debug capture) instead of DOM order.
-      // UNVERIFIED for every seat position - if a requested seat is never
-      // matched despite being visibly empty, capture a debug snapshot and
-      // inspect the real `.tooltip` text for that position.
+      // When a specific seat number is requested, resolve it via DOM
+      // position instead of any text label - confirmed live (2026-07-23)
+      // that neither a static nor a hover-triggered `.tooltip` read ever
+      // carries a seat number on this table's skin (the earlier single
+      // debug capture the tooltip approach was based on must have been a
+      // different table/skin). A live debug snapshot's pixel positions
+      // showed `.sp_seat` querySelectorAll index 0 is always a hidden,
+      // unpositioned template (no top/left style) - not a real seat - and
+      // indexes 1..10 trace a clean clockwise oval matching the 10 visible
+      // seats. Until a table with a different seat count is confirmed to
+      // follow the same "index 0 = template" pattern, assume DOM index N
+      // directly is seat number N.
       let targetIndex = -1;
       if (preferredSeat != null) {
         targetIndex = await page.evaluate((wantedSeat: number) => {
           const doc = (globalThis as any).document;
           const seatEls = Array.from(doc.querySelectorAll('.sp_seat'));
-          for (let i = 0; i < seatEls.length; i++) {
-            const seatEl: any = seatEls[i];
-            const parent = seatEl.parentElement;
-            const nameEl = parent ? parent.querySelector('.sp_name') : null;
-            const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
-            if (occupied) continue;
-            if (seatEl.offsetParent === null) continue;
-            // Scope the `.tooltip` lookup to this seat's own parent (the
-            // same DOM neighborhood already used for `.sp_name` above)
-            // rather than pairing by global-array index, which silently
-            // mismatches the moment any non-seat `.tooltip` exists on the
-            // page or the two NodeLists fall out of sync.
-            const tooltipEl: any = parent ? parent.querySelector('.tooltip') : null;
-            const tooltipText = tooltipEl ? (tooltipEl.textContent || '') : '';
-            const match = tooltipText.match(/(\d+)/);
-            if (match && parseInt(match[1], 10) === wantedSeat) return i;
-          }
-          return -1;
+          const seatEl: any = seatEls[wantedSeat];
+          if (!seatEl) return -1;
+          const parent = seatEl.parentElement;
+          const nameEl = parent ? parent.querySelector('.sp_name') : null;
+          const occupied = nameEl && nameEl.textContent && nameEl.textContent.trim().length > 0;
+          if (occupied) return -1;
+          if (seatEl.offsetParent === null) return -1;
+          return wantedSeat;
         }, preferredSeat).catch(() => -1);
 
         if (targetIndex < 0) {
