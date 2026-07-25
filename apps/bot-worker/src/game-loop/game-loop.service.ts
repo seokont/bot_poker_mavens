@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ActionType, StrategyConfig, BotOperationMode } from '@poker-bot/shared-types';
+import { ActionType, StrategyConfig, BotOperationMode, BotDecisionResult } from '@poker-bot/shared-types';
 import { BotState, BotStateMachine } from '../state-machine/bot-state-machine';
 import { GameStateReader, TableStakes } from '../game-state-reader/game-state-reader';
 import { DecisionEngineService } from '../decision-engine/decision-engine.service';
@@ -351,8 +351,15 @@ export class GameLoopService implements OnModuleDestroy {
         `=> ${decision.action}${decision.amount ? ' ' + decision.amount : ''} (${decision.reason})`,
     );
 
+    // Persisted before acting in both modes: this is the only place the
+    // engine's actual action/amount/reason ever reach bot_decisions (it
+    // previously wrote a permanent 'PENDING' row only in ASSISTED mode, so
+    // autonomous play - the normal case - left no record of why a hand was
+    // folded/called/raised, making live folding complaints unverifiable
+    // after the fact).
+    await this.persistDecision(state.botId, state.tableId, handId, turnId, gameState, decision);
+
     if (state.operationMode === BotOperationMode.ASSISTED) {
-      await this.persistPendingDecision(state.botId, handId, turnId, gameState, decision);
       // Wait for a human to approve/execute; don't recompute every tick.
       this.stateMachine.setState(state.botId, BotState.WAITING_FOR_NEXT_STATE);
       return;
@@ -510,12 +517,13 @@ export class GameLoopService implements OnModuleDestroy {
     }
   }
 
-  private async persistPendingDecision(
+  private async persistDecision(
     botId: string,
+    tableId: string,
     handId: string,
     turnId: string,
     gameState: unknown,
-    decision: unknown,
+    decision: BotDecisionResult,
   ): Promise<void> {
     try {
       await fetch(`${this.backendUrl}/api/v1/internal/bots/game-state`, {
@@ -526,14 +534,18 @@ export class GameLoopService implements OnModuleDestroy {
         },
         body: JSON.stringify({
           botId,
-          tableId: '',
+          tableId,
           handId,
           turnId,
-          stateJson: JSON.stringify({ gameState, proposedDecision: decision }),
+          stateJson: JSON.stringify(gameState),
+          decision: ACTION_TYPE_TO_STRING[decision.action],
+          amount: decision.amount,
+          confidence: decision.confidence,
+          reason: decision.reason,
         }),
       });
     } catch (err) {
-      console.warn(`[GameLoop] failed to persist pending decision for bot ${botId}:`, err);
+      console.warn(`[GameLoop] failed to persist decision for bot ${botId}:`, err);
     }
   }
 

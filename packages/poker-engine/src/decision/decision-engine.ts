@@ -19,6 +19,22 @@ export function getSafeFallback(state: GameState): BotDecisionResult {
       reason: 'SAFE_FALLBACK_CHECK',
     };
   }
+  // Previously fell straight to FOLD here whenever CHECK wasn't legal - which
+  // is exactly the case whenever hero is facing a bet/raise. That meant any
+  // strategy-validation failure (bad amount, action/allowedActions mismatch)
+  // while facing a raise silently folded even when CALL was legal and cheap,
+  // undermining every anti-calling-station fix made elsewhere in the
+  // strategies. CALL is a legal, capped-cost way to stay in the hand, so it's
+  // strictly preferable to folding blind on what is usually a transient
+  // validation edge case rather than a genuine "this hand is beat" signal.
+  const hasCall = state.allowedActions.some(a => a.action === 'CALL');
+  if (hasCall) {
+    return {
+      action: ActionType.CALL,
+      confidence: 1,
+      reason: 'SAFE_FALLBACK_CALL',
+    };
+  }
   return {
     action: ActionType.FOLD,
     confidence: 1,

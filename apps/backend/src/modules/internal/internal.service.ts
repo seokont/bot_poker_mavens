@@ -222,6 +222,10 @@ export class InternalService {
     handId: string,
     turnId: string,
     stateJson: string,
+    decision?: string,
+    amount?: number,
+    confidence?: number,
+    reason?: string,
   ) {
     return this.prisma.botDecision.create({
       data: {
@@ -229,7 +233,10 @@ export class InternalService {
         handId,
         turnId,
         stateJson,
-        decision: 'PENDING',
+        decision: decision ?? 'PENDING',
+        amount,
+        confidence: confidence ?? 1,
+        reason,
         executed: false,
       },
     });

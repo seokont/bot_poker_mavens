@@ -293,6 +293,17 @@ export function testSafeFallback(): void {
   const fbFold = getSafeFallback(stateFold);
   assert(fbFold.action === ActionType.FOLD, `Expected FOLD, got ${fbFold.action}`);
   assert(fbFold.reason === 'SAFE_FALLBACK_FOLD', `Expected SAFE_FALLBACK_FOLD, got ${fbFold.reason}`);
+
+  // 32b) Safe fallback without check but with call (facing a bet/raise) →
+  // CALL, not FOLD. This is the scenario a strategy-validation failure hits
+  // most often (raise sizing edge cases), and folding blind there undid every
+  // other anti-calling-station fix in the strategies themselves.
+  const stateCall = makeMinimalGameState({
+    allowedActions: [{ action: ActionType.FOLD }, { action: ActionType.CALL }],
+  });
+  const fbCall = getSafeFallback(stateCall);
+  assert(fbCall.action === ActionType.CALL, `Expected CALL, got ${fbCall.action}`);
+  assert(fbCall.reason === 'SAFE_FALLBACK_CALL', `Expected SAFE_FALLBACK_CALL, got ${fbCall.reason}`);
 }
 
 export function testEasyStrategy(): void {

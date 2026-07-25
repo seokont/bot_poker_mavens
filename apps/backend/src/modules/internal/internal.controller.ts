@@ -99,6 +99,10 @@ export class InternalController {
       handId: string;
       turnId: string;
       stateJson: string;
+      decision?: string;
+      amount?: number;
+      confidence?: number;
+      reason?: string;
     },
   ) {
     return this.internalService.saveGameState(
@@ -107,6 +111,10 @@ export class InternalController {
       body.handId,
       body.turnId,
       body.stateJson,
+      body.decision,
+      body.amount,
+      body.confidence,
+      body.reason,
     );
   }
 

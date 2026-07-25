@@ -260,7 +260,7 @@ When the decision engine encounters any error (timeout, invalid state, exception
 
 ```typescript
 function getSafeFallback(state: GameState): BotDecisionResult {
-  // Prefer CHECK if available (preserves position)
+  // Prefer CHECK if available (free, preserves position)
   const hasCheck = state.allowedActions.some(a => a.action === 'CHECK');
   if (hasCheck) {
     return {
@@ -269,7 +269,21 @@ function getSafeFallback(state: GameState): BotDecisionResult {
       reason: 'SAFE_FALLBACK_CHECK',
     };
   }
-  // Otherwise FOLD (minimizes loss)
+  // Otherwise prefer CALL if legal. Originally fell straight to FOLD here,
+  // which meant any validation failure while facing a bet/raise (the case
+  // where CHECK is never legal) folded even when CALL was available and
+  // cheap - silently undoing every anti-calling-station fix made in the
+  // strategies themselves. Confirmed live as the cause of bots folding
+  // immediately whenever the opponent raised.
+  const hasCall = state.allowedActions.some(a => a.action === 'CALL');
+  if (hasCall) {
+    return {
+      action: 'CALL',
+      confidence: 1,
+      reason: 'SAFE_FALLBACK_CALL',
+    };
+  }
+  // Only FOLD when neither CHECK nor CALL is legal.
   return {
     action: 'FOLD',
     confidence: 1,
@@ -290,8 +304,8 @@ function getSafeFallback(state: GameState): BotDecisionResult {
 ### Fallback Hierarchy
 
 ```
-Bluff suggestion rejected (not allowed) ──► CHECK (if available) ──► FOLD
-Value bet rejected (bad sizing) ──► CHECK (if available) ──► FOLD
-Engine exception ──► CHECK (if available) ──► FOLD
-External timeout ──► CHECK (if available) ──► FOLD
+Bluff suggestion rejected (not allowed) ──► CHECK (if available) ──► CALL (if available) ──► FOLD
+Value bet rejected (bad sizing) ──► CHECK (if available) ──► CALL (if available) ──► FOLD
+Engine exception ──► CHECK (if available) ──► CALL (if available) ──► FOLD
+External timeout ──► CHECK (if available) ──► CALL (if available) ──► FOLD
 ```
