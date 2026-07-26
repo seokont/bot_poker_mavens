@@ -11,9 +11,9 @@ import {
   ActionType,
   GameType,
   LimitType,
-  Position,
   Street as SharedStreet,
 } from '@poker-bot/shared-types';
+import { resolvePosition, resolveFoldedPlayers } from './state-derivation';
 
 export interface GameState {
   holeCards: string[];
@@ -234,6 +234,8 @@ export class GameStateReader {
     const boardCards = this.parseCards(rawBoard);
     const street = this.resolveStreet(streetLabel, boardCards.length);
 
+    const foldedPlayerNames = resolveFoldedPlayers(rawHistory);
+
     const players: TablePlayerState[] = rawPlayers.map((p) => ({
       playerId: `seat-${p.seatIndex}`,
       playerName: p.name,
@@ -242,9 +244,7 @@ export class GameStateReader {
       currentBet: p.bet,
       isHero: p.isHero,
       isDealer: p.isDealer,
-      // Best-effort: without a reliable "folded" indicator we treat a
-      // non-active, non-hero seat conservatively as still live.
-      hasFolded: false,
+      hasFolded: foldedPlayerNames.has(p.name),
       isAllIn: false,
     }));
 
@@ -271,7 +271,7 @@ export class GameStateReader {
       limitType: this.resolveLimitType(stakes.limitType),
       street,
       seatNumber: heroSeatIndex >= 0 ? heroSeatIndex : 0,
-      position: Position.BTN,
+      position: resolvePosition(rawPlayers, heroSeatIndex),
       playerCount: players.length,
       activePlayerCount: players.filter((p) => !p.hasFolded).length,
       holeCards,
