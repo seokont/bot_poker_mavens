@@ -121,6 +121,15 @@ export class BotCommandsService {
       );
     }
 
+    // The bot-worker's lobby search matches rows by the table's real display
+    // name (externalTableId, e.g. Hebrew names as they appear on the live
+    // site) - our internal tableId (a DB cuid) never appears in that grid,
+    // so it must be resolved and forwarded alongside tableId.
+    const table = await this.prisma.pokerTable.findUnique({ where: { id: tableId } });
+    if (!table) {
+      throw new NotFoundException(`Table with ID "${tableId}" not found`);
+    }
+
     // Use override credentials if provided (e.g., from Internal API), otherwise from DB
     let login: string;
     let password: string;
@@ -139,6 +148,7 @@ export class BotCommandsService {
       {
         botId,
         tableId,
+        tableName: table.externalTableId,
         buyIn,
         login,
         password,

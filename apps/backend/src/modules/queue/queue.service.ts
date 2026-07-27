@@ -104,6 +104,7 @@ export class QueueService implements OnModuleDestroy {
       login: data.login || null,
       password: data.password || null,
       tableId: data.tableId || null,
+      tableName: data.tableName || null,
       buyIn: data.buyIn || null,
       amount: data.amount || null,
       handId: data.handId || null,

@@ -28,6 +28,7 @@ interface JobData {
   login?: string;
   password?: string;
   tableId?: string;
+  tableName?: string;
   buyIn?: number;
   amount?: number;
   handId?: string;
@@ -193,6 +194,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
   async joinTable(
     botId: string,
     tableId: string,
+    tableName?: string,
     buyIn?: number,
     login?: string,
     password?: string,
@@ -276,12 +278,19 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
       await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(3000);
 
-      console.log(`[Worker] joinTable: navigated to lobby, opening table "${tableId}"`);
+      // The lobby's #RingGrid lists tables by their real display name (e.g.
+      // Hebrew names like "אומה"), not our internal DB id - tableName (the
+      // table's externalTableId) is what actually appears in that grid.
+      // Fall back to tableId only for backward-compatible callers that
+      // haven't been updated to pass it yet, though that fallback will
+      // never match a real row.
+      const lobbyTableName = tableName ?? tableId;
+      console.log(`[Worker] joinTable: navigated to lobby, opening table "${lobbyTableName}"`);
 
       // 3. Open the target table from the lobby's own HTML table list
-      const tableOpened = await this.openTableFromLobby(page, tableId, botId);
+      const tableOpened = await this.openTableFromLobby(page, lobbyTableName, botId);
       if (!tableOpened) {
-        throw new Error(`Could not find/open table "${tableId}" from the lobby`);
+        throw new Error(`Could not find/open table "${lobbyTableName}" from the lobby`);
       }
       await page.waitForTimeout(3000);
 
@@ -1540,7 +1549,7 @@ export class WorkerService implements OnModuleInit, OnModuleDestroy {
           await this.stopBot(botId!);
           break;
         case 'joinTable':
-          await this.joinTable(botId!, job.tableId!, job.buyIn, job.login, job.password, job.preferredSeat);
+          await this.joinTable(botId!, job.tableId!, job.tableName, job.buyIn, job.login, job.password, job.preferredSeat);
           break;
         case 'leaveTable':
           await this.leaveTable(botId!);
