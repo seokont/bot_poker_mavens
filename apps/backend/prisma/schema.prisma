@@ -203,8 +203,8 @@ model BotDecision {
   handId           String
   turnId           String
   street           String?
-  stateJson        String?
-  allowedActionsJson String?
+  stateJson        String?  @db.Text
+  allowedActionsJson String? @db.Text
   decision         String
   amount           Float?
   confidence       Float    @default(1)
