@@ -851,55 +851,74 @@ export class GameStateReader {
 
   private async readPlayers(page: Page): Promise<PlayerState[]> {
     try {
-      const playerElements = page.locator(
-        '[data-testid="player"], .player-seat, .seat',
-      );
-      const count = await playerElements.count();
-      const players: PlayerState[] = [];
+      // Confirmed via a live hand capture on iqpoker88.com: the open table
+      // renders as a `div.dialog` with a dynamic id `R<tableName>` (e.g.
+      // `#R1-2`) - scope seat reads to it (excluding the lobby's fixed
+      // `Ring*` dialogs, which share the same `R` id prefix) so they don't
+      // pick up a stray template `.sp_seat` that exists elsewhere on the
+      // page outside any open table. Each of the (up to 10) `.sp_seat`
+      // elements is a fixed physical seat slot; an unoccupied one has empty
+      // `.sp_name`/`.sp_info` text.
+      const tableDialog = page.locator('div.dialog[id^="R"]:not([id^="Ring"])').first();
+      const seatElements = tableDialog.locator('.sp_seat');
+      const count = await seatElements.count();
 
+      // Confirmed via a live hand capture: the dealer button is a single
+      // shared `.dealer` element positioned next to whichever seat
+      // currently holds it, not a per-seat class or attribute - match it to
+      // the nearest seat by on-screen position.
+      const dealerBox = await tableDialog.locator('.dealer').first().boundingBox().catch(() => null);
+
+      // Confirmed via a live hand capture: the page never navigates away
+      // from the `LoginName=` query param used for auto-login, even once
+      // seated - it reliably identifies the hero's own seat by name, since
+      // there is no other confirmed hero indicator in the DOM.
+      const heroLoginMatch = page.url().match(/LoginName=([^&]+)/i);
+      const heroLogin = heroLoginMatch ? decodeURIComponent(heroLoginMatch[1]) : null;
+
+      const seatData: Array<{ name: string; stackText: string; box: { x: number; y: number } | null }> = [];
       for (let i = 0; i < count; i++) {
-        const player = playerElements.nth(i);
-        const name =
-          (await player
-            .locator('[data-testid="player-name"], .player-name')
-            .textContent()
-            .catch(() => null)) ?? `Player ${i}`;
-        const stackText =
-          (await player
-            .locator('[data-testid="player-stack"], .player-stack')
-            .textContent()
-            .catch(() => null)) ?? '0';
-        const betText =
-          (await player
-            .locator('[data-testid="player-bet"], .player-bet')
-            .textContent()
-            .catch(() => null)) ?? '0';
-        const isHero =
-          (await player
-            .locator('[data-testid="hero-indicator"], .hero-indicator, .is-me')
-            .isVisible()
-            .catch(() => false)) ?? false;
-        const isActive =
-          (await player
-            .locator('[data-testid="active-indicator"], .active-indicator')
-            .isVisible()
-            .catch(() => false)) ?? false;
-        const isDealer =
-          (await player
-            .locator('[data-testid="dealer-indicator"], .dealer-indicator, .dealer-chip')
-            .isVisible()
-            .catch(() => false)) ?? false;
+        const seat = seatElements.nth(i);
+        const name = (await seat.locator('.sp_name').textContent().catch(() => null))?.trim() ?? '';
+        const stackText = (await seat.locator('.sp_info').textContent().catch(() => null))?.trim() ?? '';
+        const box = await seat.boundingBox().catch(() => null);
+        seatData.push({ name, stackText, box: box ? { x: box.x, y: box.y } : null });
+      }
 
-        players.push({
-          name,
-          stack: parseFloat(stackText.replace(/[^0-9.]/g, '')) || 0,
-          bet: parseFloat(betText.replace(/[^0-9.]/g, '')) || 0,
-          isHero,
-          isActive,
-          isDealer,
-          seatIndex: i,
+      let dealerSeatIndex = -1;
+      if (dealerBox) {
+        let nearestDistance = Infinity;
+        seatData.forEach((seat, i) => {
+          if (!seat.box) return;
+          const dx = seat.box.x - dealerBox.x;
+          const dy = seat.box.y - dealerBox.y;
+          const distance = dx * dx + dy * dy;
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            dealerSeatIndex = i;
+          }
         });
       }
+
+      const players: PlayerState[] = [];
+      seatData.forEach((seat, i) => {
+        // Empty `.sp_name` means the physical seat slot is unoccupied.
+        if (!seat.name) return;
+
+        players.push({
+          name: seat.name,
+          // Per-seat current-street bet is rendered as a `.chipstack` of
+          // graphical `.chip` sprites on this client, with no numeric text
+          // - not yet readable; left at 0 (matches the old selector's
+          // always-unmatched behavior for this one field, not a regression).
+          bet: 0,
+          isHero: heroLogin !== null && seat.name === heroLogin,
+          isActive: false,
+          isDealer: i === dealerSeatIndex,
+          seatIndex: i,
+          stack: parseFloat(seat.stackText.replace(/[^0-9.]/g, '')) || 0,
+        });
+      });
 
       return players;
     } catch {
