@@ -344,9 +344,18 @@ This task has no automated test — it validates an assumption Task 1/2's logic 
     console.log(
       `[position-check] heroSeat=${heroSeatIndex} dealer=${rawPlayers.find((p) => p.isDealer)?.seatIndex} ` +
       `seats=${rawPlayers.map((p) => `${p.seatIndex}:${p.name}${p.isDealer ? '(D)' : ''}`).join(',')} ` +
-      `resolvedPosition=${resolvePosition(rawPlayers, heroSeatIndex)}`,
+      `occupied=${occupiedPlayers.map((p) => p.seatIndex).join(',')} ` +
+      `resolvedPosition=${resolvePosition(occupiedPlayers, heroSeatIndex)}`,
+    );
+    console.log(
+      `[fold-check] rawHistoryCount=${rawHistory.length} rawHistory=${JSON.stringify(rawHistory)} ` +
+      `foldedPlayerNames=${[...foldedPlayerNames].join(',')} playerNames=${rawPlayers.map((p) => p.name).join(',')}`,
     );
 ```
+
+The second log line exists to close two gaps the final whole-branch review flagged that Task 3's original scope (seat ordering only) didn't cover:
+- **`readActionHistory` hand-scoping is unverified.** If `rawHistory` (and therefore `foldedPlayerNames`) keeps growing or carries entries from a previous hand instead of resetting each hand, folds will incorrectly persist across hands. Compare `rawHistoryCount` and its contents hand-over-hand in Step 3 below — it should reset (or clearly restart) at the start of each new hand, not keep accumulating indefinitely.
+- **Selector/name-matching correctness on the real client is unverified.** `resolveFoldedPlayers` matches on the literal ASCII substring `'fold'` (case-insensitive) — but this client's confirmed UI strings elsewhere in this file are Hebrew (e.g. `השוואה` for call, `העלאה` for raise, `מוכן` for ready). If the action log renders fold in Hebrew too, `foldedPlayerNames` will always be empty and the fix is a silent no-op. Also check that `playerNames` (from `.player-name`) and the names appearing in `rawHistory` actually match character-for-character — a whitespace or decoration mismatch between the two sources means `hasFolded` never fires even when `foldedPlayerNames` is non-empty.
 
 - [ ] **Step 2: Run the bot-worker against the Poker Mavens demo table**
 
@@ -354,14 +363,19 @@ Start the worker per the project's existing dev workflow (`apps/bot-worker`'s `d
 
 - [ ] **Step 3: Compare logged output against the visible table**
 
-For each hand, compare the `[position-check]` log line against what's actually visible in the Poker Mavens UI at that moment: does `resolvedPosition` match the hero's real position (e.g., does it say `BTN` only on hands where the hero visibly has the dealer button, `SB`/`BB` only on hands where the hero is visibly posting those blinds)? Record any mismatch with the hand's seat layout.
+For each hand, compare the `[position-check]` log line against what's actually visible in the Poker Mavens UI at that moment: does `resolvedPosition` match the hero's real position (e.g., does it say `BTN` only on hands where the hero visibly has the dealer button, `SB`/`BB` only on hands where the hero is visibly posting those blinds)? Record any mismatch with the hand's seat layout. Also confirm `occupied` in the same log line lists only seats that visibly have a player in them (not empty chairs).
 
-- **If all orbits match:** `seatIndex` ordering is confirmed clockwise; the Task 1/2 implementation is correct as-is. Proceed to Step 4.
-- **If mismatches are found:** `seatIndex` does not correspond to physical clockwise order. Do not remove the diagnostic log yet — instead capture the exact mismatching seat layout (which `seatIndex` values map to which physical seats) and treat this as a new finding requiring a follow-up fix (an explicit seat-index-to-clockwise-order mapping table) before Task 1/2 can be trusted. This is out of this plan's scope to fix blindly without seeing the real mismatch pattern.
+Additionally, for each hand, check the `[fold-check]` log line:
+- Does `rawHistoryCount` reset (or clearly restart) at the start of each new hand rather than growing indefinitely across hands? If it keeps accumulating past a hand boundary, `readActionHistory` is not hand-scoped and `hasFolded` will incorrectly persist folds across hands — this needs a follow-up fix (scoping the read to the current hand) before the fix can be trusted.
+- After an opponent visibly folds in the UI, does their name appear in `foldedPlayerNames`? If `foldedPlayerNames` stays empty even after visible folds, the action-log text is likely not matching the literal `'fold'` substring (e.g. it's in Hebrew, matching this file's other confirmed Hebrew UI strings) — this needs a follow-up fix to `mapHistoryAction`/`resolveFoldedPlayers`'s matching logic with the real fold-action text captured in `rawHistory`.
+- Do the names in `playerNames` match the names appearing in `rawHistory` exactly? A mismatch (whitespace, decoration, truncation) means `hasFolded` will never fire even with a working fold-text match.
 
-- [ ] **Step 4: Remove the temporary diagnostic log (only after a successful verification in Step 3)**
+- **If all checks pass across all orbits:** `seatIndex` ordering is confirmed clockwise, occupied-seat filtering is correct, action history is hand-scoped, and fold-text matching works. The Task 1/2/fix-round implementation is correct as-is. Proceed to Step 4.
+- **If any mismatch is found:** do not remove the diagnostic logs yet — capture the exact mismatching data (seat layout, raw history entries, or name strings) and treat it as a new finding requiring a follow-up fix before this branch's fix can be trusted. This is out of this plan's scope to fix blindly without seeing the real live data.
 
-Revert the log line added in Step 1.
+- [ ] **Step 4: Remove the temporary diagnostic logs (only after a successful verification in Step 3)**
+
+Revert both log lines (`[position-check]` and `[fold-check]`) added in Step 1.
 
 Run: `cd apps/bot-worker && npx tsc --noEmit` to confirm the revert is clean.
 
