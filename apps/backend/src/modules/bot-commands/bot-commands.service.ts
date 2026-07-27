@@ -121,11 +121,16 @@ export class BotCommandsService {
       );
     }
 
-    // The bot-worker's lobby search matches rows by the table's real display
-    // name (externalTableId, e.g. Hebrew names as they appear on the live
-    // site) - our internal tableId (a DB cuid) never appears in that grid,
-    // so it must be resolved and forwarded alongside tableId.
-    const table = await this.prisma.pokerTable.findUnique({ where: { id: tableId } });
+    // tableId here is actually the real Poker Mavens table name in the
+    // common case (admin-web's join dialog sends `table.name`, per
+    // BotDetailPage.vue's `selectedTableName` - see the same OR-lookup
+    // pattern already established in InternalService.getPlayConfig()) -
+    // accept the DB id too so direct API callers using it still work.
+    // The resolved externalTableId is what the bot-worker's lobby search
+    // actually needs to match rows in the live site's table grid.
+    const table = await this.prisma.pokerTable.findFirst({
+      where: { OR: [{ id: tableId }, { name: tableId }, { externalTableId: tableId }] },
+    });
     if (!table) {
       throw new NotFoundException(`Table with ID "${tableId}" not found`);
     }
