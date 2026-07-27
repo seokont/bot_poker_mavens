@@ -236,6 +236,13 @@ export class GameStateReader {
 
     const foldedPlayerNames = resolveFoldedPlayers(rawHistory);
 
+    // resolvePosition needs the count of seats actually in the hand, not the
+    // physical table size - empty seats read by readPlayers() come back with
+    // a placeholder name and stack: 0, so a seat only counts as occupied if
+    // it has chips behind it or it's the hero's own seat (whose stack can
+    // legitimately read as 0 during some read timings).
+    const occupiedPlayers = rawPlayers.filter((p) => p.stack > 0 || p.isHero);
+
     const players: TablePlayerState[] = rawPlayers.map((p) => ({
       playerId: `seat-${p.seatIndex}`,
       playerName: p.name,
@@ -271,7 +278,7 @@ export class GameStateReader {
       limitType: this.resolveLimitType(stakes.limitType),
       street,
       seatNumber: heroSeatIndex >= 0 ? heroSeatIndex : 0,
-      position: resolvePosition(rawPlayers, heroSeatIndex),
+      position: resolvePosition(occupiedPlayers, heroSeatIndex),
       playerCount: players.length,
       activePlayerCount: players.filter((p) => !p.hasFolded).length,
       holeCards,

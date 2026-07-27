@@ -6,7 +6,7 @@
     "dev": "ts-node -r tsconfig-paths/register src/main.ts",
     "build": "tsc",
     "lint": "echo 'worker lint ok'",
-    "test": "echo 'worker tests ok'"
+    "test": "ts-node src/game-state-reader/__tests__/run.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

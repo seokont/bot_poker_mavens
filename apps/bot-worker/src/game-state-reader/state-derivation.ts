@@ -24,10 +24,15 @@ const TABLE_SIZE_ORDER: Record<number, Position[]> = {
 
 /**
  * Computes the hero's position by finding their clockwise seat offset from
- * the dealer button among currently-occupied seats. Falls back to BTN (the
+ * the dealer button. The caller is responsible for passing only occupied
+ * seats - this function does not filter for occupancy itself, it just
+ * sorts/dedupes the given `seats` by `seatIndex` and computes the clockwise
+ * offset from the dealer against that sorted view. Falls back to BTN (the
  * previous unconditional default) whenever the table can't be read reliably
- * - no dealer found, hero's seat missing from the list, or no seats at all -
- * so a DOM read hiccup degrades to the old behavior instead of throwing.
+ * - no dealer found, hero's seat missing from the list, no seats at all, or
+ * more than 8 seats (TABLE_SIZE_ORDER only covers up to 8-max, so a larger
+ * count can't be safely compressed into it) - so a DOM read hiccup degrades
+ * to the old behavior instead of throwing or returning a wrong position.
  */
 export function resolvePosition(
   seats: { seatIndex: number; isDealer: boolean }[],
@@ -36,6 +41,7 @@ export function resolvePosition(
   const occupied = [...seats].sort((a, b) => a.seatIndex - b.seatIndex);
   const n = occupied.length;
   if (n === 0) return Position.BTN;
+  if (n > 8) return Position.BTN;
 
   const dealerPos = occupied.findIndex((s) => s.isDealer);
   const heroPos = occupied.findIndex((s) => s.seatIndex === heroSeatIndex);

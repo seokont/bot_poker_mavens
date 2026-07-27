@@ -53,6 +53,43 @@ function testFallbacksOnUnreadableTable(): void {
   assert(resolvePosition([], 0) === Position.BTN, 'empty table: should fall back to BTN');
 }
 
+function testNonContiguousSeatIndices(): void {
+  // Occupied seats at indices 0, 3, 7 (not 0..n-1) - dealer at seatIndex 3.
+  // Sorted order: [0, 3(dealer), 7]. n=3 -> TABLE_SIZE_ORDER[3] = [BTN, SB, BB].
+  // If the code mistakenly used raw seatIndex arithmetic instead of sorted
+  // position, these offsets would come out wrong.
+  const table = seats([[0, false], [3, true], [7, false]]);
+  assert(resolvePosition(table, 3) === Position.BTN, 'non-contiguous: dealer seat should be BTN');
+  assert(resolvePosition(table, 7) === Position.SB, 'non-contiguous: seat after dealer (sorted) should be SB');
+  assert(resolvePosition(table, 0) === Position.BB, 'non-contiguous: seat two after dealer (sorted, wrapped) should be BB');
+}
+
+function testNineMaxFallsBackToBtn(): void {
+  // 9 occupied seats exceeds TABLE_SIZE_ORDER's 8-max coverage, so the
+  // Finding 2 guard should kick in and return BTN for every hero seat,
+  // not just the dealer's own seat.
+  const table = seats([
+    [0, false], [1, false], [2, false], [3, false], [4, true],
+    [5, false], [6, false], [7, false], [8, false],
+  ]);
+  for (let heroSeatIndex = 0; heroSeatIndex < 9; heroSeatIndex++) {
+    assert(
+      resolvePosition(table, heroSeatIndex) === Position.BTN,
+      `9-max: hero at seat ${heroSeatIndex} should fall back to BTN (table too large)`,
+    );
+  }
+}
+
+function testAmbiguousDoubleDealerDoesNotThrow(): void {
+  // Malformed input: two seats both flagged isDealer. findIndex resolves to
+  // whichever comes first in sorted-by-seatIndex order - seatIndex 0 here -
+  // so offsets are computed from that seat.
+  const table = seats([[0, true], [1, false], [2, true]]);
+  assert(resolvePosition(table, 0) === Position.BTN, 'double dealer: first dealer in sorted order treated as BTN');
+  assert(resolvePosition(table, 1) === Position.SB, 'double dealer: seat after first dealer should be SB');
+  assert(resolvePosition(table, 2) === Position.BB, 'double dealer: seat two after first dealer should be BB');
+}
+
 function testResolveFoldedPlayers(): void {
   const history = [
     { playerName: 'Alice', action: 'fold' },
@@ -71,6 +108,17 @@ function testResolveFoldedPlayersEmptyHistory(): void {
   assert(folded.size === 0, 'empty history should produce an empty set');
 }
 
+function testResolveFoldedPlayersUnknownPlayerName(): void {
+  // resolveFoldedPlayers never looks at a players list - it just reads the
+  // action history - so a fold entry for a name that isn't at the table
+  // anymore (e.g. someone who left) should still land in the returned set
+  // without erroring. Cross-referencing against a players list happens at
+  // the call site, not inside this function.
+  const history = [{ playerName: 'Ghost', action: 'fold' }];
+  const folded = resolveFoldedPlayers(history);
+  assert(folded.has('Ghost'), 'fold entry for a player not at the table should still appear in the set');
+}
+
 export function runAll(): number {
   const tests: Array<{ name: string; fn: () => void }> = [
     { name: 'resolvePosition: heads-up', fn: testHeadsUp },
@@ -78,8 +126,12 @@ export function runAll(): number {
     { name: 'resolvePosition: 6-max', fn: testSixMax },
     { name: 'resolvePosition: 8-max', fn: testEightMax },
     { name: 'resolvePosition: fallbacks', fn: testFallbacksOnUnreadableTable },
+    { name: 'resolvePosition: non-contiguous seat indices', fn: testNonContiguousSeatIndices },
+    { name: 'resolvePosition: 9-max falls back to BTN', fn: testNineMaxFallsBackToBtn },
+    { name: 'resolvePosition: ambiguous double dealer does not throw', fn: testAmbiguousDoubleDealerDoesNotThrow },
     { name: 'resolveFoldedPlayers: basic', fn: testResolveFoldedPlayers },
     { name: 'resolveFoldedPlayers: empty history', fn: testResolveFoldedPlayersEmptyHistory },
+    { name: 'resolveFoldedPlayers: unknown player name', fn: testResolveFoldedPlayersUnknownPlayerName },
   ];
 
   let passed = 0;
