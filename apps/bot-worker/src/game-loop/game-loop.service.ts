@@ -445,22 +445,23 @@ export class GameLoopService implements OnModuleDestroy {
     gameState: { street: string },
     decision: { action: ActionType },
   ): number {
-    // Shortened on operator request (faster action turnaround) - still
-    // randomized rather than a flat/instant delay, since a perfectly
+    // Shortened further on operator request (maximum turnaround speed) -
+    // still randomized rather than a flat/instant delay, since a perfectly
     // consistent zero-latency response is itself an obvious tell, but the
-    // range is now a few hundred ms instead of multiple seconds. This also
-    // shrinks the window for the "turn expired before we could click" race
-    // (see decideAndAct/executePokerAction), since the full decide-then-act
-    // pipeline needs to fit inside the site's real turn clock.
-    const base = 150 + Math.random() * 350; // 0.15-0.5s baseline
-    const postflopBonus = gameState.street !== 'PREFLOP' ? Math.random() * 100 : 0;
+    // range is now tens-to-low-hundreds of ms instead of up to 900ms. This
+    // also shrinks the window for the "turn expired before we could click"
+    // race (see decideAndAct/executePokerAction), since the full
+    // decide-then-act pipeline needs to fit inside the site's real turn
+    // clock.
+    const base = 50 + Math.random() * 150; // 0.05-0.2s baseline
+    const postflopBonus = gameState.street !== 'PREFLOP' ? Math.random() * 50 : 0;
     const isSizingDecision =
       decision.action === ActionType.RAISE ||
       decision.action === ActionType.BET ||
       decision.action === ActionType.ALL_IN;
-    const sizingBonus = isSizingDecision ? 100 + Math.random() * 150 : 0;
+    const sizingBonus = isSizingDecision ? 30 + Math.random() * 70 : 0;
 
-    return Math.min(base + postflopBonus + sizingBonus, 900);
+    return Math.min(base + postflopBonus + sizingBonus, 300);
   }
 
   private async fetchPlayConfig(
