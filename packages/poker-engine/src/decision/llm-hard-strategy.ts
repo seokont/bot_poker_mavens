@@ -62,7 +62,8 @@ function formatCards(cards: Card[]): string {
 }
 
 /**
- * Calls Groq's OpenAI-compatible chat completions API to make a poker
+ * Calls an OpenAI-compatible chat completions API (Groq, OpenRouter, or any
+ * other provider using the same request/response shape) to make a poker
  * decision. Plugs into DecisionEngine via setHardStrategy() - only bots
  * assigned a HARD-difficulty strategy profile route here; EASY/MEDIUM bots
  * are unaffected. DecisionEngine.decide() already validates whatever this
@@ -70,11 +71,11 @@ function formatCards(cards: Card[]): string {
  * default on any error or invalid response, so a malformed/hallucinated
  * reply can't cause an illegal action to reach the table.
  */
-export class GroqStrategy implements HardStrategyInterface {
+export class LlmHardStrategy implements HardStrategyInterface {
   constructor(
     private readonly apiKey: string,
-    private readonly model: string = 'llama-3.3-70b-versatile',
-    private readonly baseUrl: string = 'https://api.groq.com/openai/v1',
+    private readonly model: string,
+    private readonly baseUrl: string,
   ) {}
 
   async decide(state: GameState, config: StrategyConfig): Promise<BotDecisionResult> {

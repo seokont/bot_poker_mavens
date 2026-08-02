@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DecisionEngine, GroqStrategy } from '@poker-bot/poker-engine';
+import { DecisionEngine, LlmHardStrategy } from '@poker-bot/poker-engine';
 import { GameState, StrategyConfig, BotDecisionResult, ActionType } from '@poker-bot/shared-types';
 
 export type { GameState, StrategyConfig, BotDecisionResult };
@@ -25,17 +25,27 @@ export class DecisionEngineService {
     );
 
     // Bots with a HARD-difficulty strategy profile route their decisions
-    // through Groq instead of the built-in MEDIUM logic - EASY/MEDIUM bots
-    // are unaffected. DecisionEngine.decide() validates whatever comes back
-    // against allowedActions/heroStack and falls back safely on any error,
-    // so a bad/hallucinated response can't put an illegal action on the table.
-    const groqApiKey = configService.get<string>('GROQ_API_KEY');
-    if (groqApiKey) {
-      const groqModel = configService.get<string>('GROQ_MODEL', 'llama-3.3-70b-versatile');
-      this.engine.setHardStrategy(new GroqStrategy(groqApiKey, groqModel));
-      this.logger.log(`Groq HARD strategy enabled (model: ${groqModel})`);
+    // through an LLM (OpenRouter, running a Hermes model by default) instead
+    // of the built-in MEDIUM logic - EASY/MEDIUM bots are unaffected.
+    // DecisionEngine.decide() validates whatever comes back against
+    // allowedActions/heroStack and falls back safely on any error, so a
+    // bad/hallucinated response can't put an illegal action on the table.
+    const openRouterApiKey = configService.get<string>('OPENROUTER_API_KEY');
+    if (openRouterApiKey) {
+      const openRouterModel = configService.get<string>(
+        'OPENROUTER_MODEL',
+        'nousresearch/hermes-3-llama-3.1-70b',
+      );
+      const openRouterBaseUrl = configService.get<string>(
+        'OPENROUTER_BASE_URL',
+        'https://openrouter.ai/api/v1',
+      );
+      this.engine.setHardStrategy(
+        new LlmHardStrategy(openRouterApiKey, openRouterModel, openRouterBaseUrl),
+      );
+      this.logger.log(`OpenRouter HARD strategy enabled (model: ${openRouterModel})`);
     } else {
-      this.logger.log('GROQ_API_KEY not set - HARD-difficulty bots will fall back to MEDIUM strategy');
+      this.logger.log('OPENROUTER_API_KEY not set - HARD-difficulty bots will fall back to MEDIUM strategy');
     }
   }
 

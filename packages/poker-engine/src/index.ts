@@ -15,4 +15,4 @@ export * from './decision/decision-engine';
 export * from './decision/weighted-action';
 export * from './decision/easy-strategy';
 export * from './decision/medium-strategy';
-export * from './decision/groq-strategy';
+export * from './decision/llm-hard-strategy';
